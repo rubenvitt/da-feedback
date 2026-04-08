@@ -109,12 +109,15 @@ func (s *Store) Activate(ctx context.Context, id int, closeAfterHours int) error
 
 	// Activate this survey
 	closesAt := now.Add(time.Duration(closeAfterHours) * time.Hour)
-	_, err = tx.ExecContext(ctx,
+	res, err := tx.ExecContext(ctx,
 		`UPDATE surveys SET status = 'active', activated_at = ?, closes_at = ?
 		 WHERE id = ? AND status = 'draft'`,
 		now, closesAt, id)
 	if err != nil {
 		return fmt.Errorf("activate survey: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("activate survey %d: %w", id, ErrNotFound)
 	}
 
 	return tx.Commit()
@@ -122,20 +125,26 @@ func (s *Store) Activate(ctx context.Context, id int, closeAfterHours int) error
 
 func (s *Store) Close(ctx context.Context, id int) error {
 	now := time.Now()
-	_, err := s.db.ExecContext(ctx,
+	res, err := s.db.ExecContext(ctx,
 		"UPDATE surveys SET status = 'closed', closed_at = ? WHERE id = ?",
 		now, id)
 	if err != nil {
 		return fmt.Errorf("close survey: %w", err)
 	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("close survey: %w", ErrNotFound)
+	}
 	return nil
 }
 
 func (s *Store) Archive(ctx context.Context, id int) error {
-	_, err := s.db.ExecContext(ctx,
+	res, err := s.db.ExecContext(ctx,
 		"UPDATE surveys SET status = 'archived' WHERE id = ? AND status = 'closed'", id)
 	if err != nil {
 		return fmt.Errorf("archive survey: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("archive survey: %w", ErrNotFound)
 	}
 	return nil
 }
