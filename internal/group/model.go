@@ -1,6 +1,11 @@
 package group
 
-import "time"
+import (
+	"errors"
+	"time"
+)
+
+var ErrNotFound = errors.New("group not found")
 
 type Group struct {
 	ID              int

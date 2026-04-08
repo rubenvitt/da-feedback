@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"database/sql"
+	"errors"
 	"fmt"
 	"math/big"
 )
@@ -44,7 +45,10 @@ func (s *Store) Create(ctx context.Context, name, slug string) (*Group, error) {
 		return nil, fmt.Errorf("insert group: %w", err)
 	}
 
-	id, _ := res.LastInsertId()
+	id, err := res.LastInsertId()
+	if err != nil {
+		return nil, fmt.Errorf("last insert id: %w", err)
+	}
 	return s.GetByID(ctx, int(id))
 }
 
@@ -54,6 +58,9 @@ func (s *Store) GetByID(ctx context.Context, id int) (*Group, error) {
 		"SELECT id, name, slug, secret, close_after_hours, created_at FROM groups WHERE id = ?", id,
 	).Scan(&g.ID, &g.Name, &g.Slug, &g.Secret, &g.CloseAfterHours, &g.CreatedAt)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("get group %d: %w", id, ErrNotFound)
+		}
 		return nil, fmt.Errorf("get group %d: %w", id, err)
 	}
 	return g, nil
@@ -66,6 +73,9 @@ func (s *Store) GetBySlugAndSecret(ctx context.Context, slug, secret string) (*G
 		slug, secret,
 	).Scan(&g.ID, &g.Name, &g.Slug, &g.Secret, &g.CloseAfterHours, &g.CreatedAt)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("get group by slug: %w", ErrNotFound)
+		}
 		return nil, fmt.Errorf("get group by slug: %w", err)
 	}
 	return g, nil
@@ -91,19 +101,25 @@ func (s *Store) List(ctx context.Context) ([]Group, error) {
 }
 
 func (s *Store) Update(ctx context.Context, g *Group) error {
-	_, err := s.db.ExecContext(ctx,
+	res, err := s.db.ExecContext(ctx,
 		"UPDATE groups SET name = ?, slug = ?, close_after_hours = ? WHERE id = ?",
 		g.Name, g.Slug, g.CloseAfterHours, g.ID)
 	if err != nil {
 		return fmt.Errorf("update group: %w", err)
 	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("update group: %w", ErrNotFound)
+	}
 	return nil
 }
 
 func (s *Store) Delete(ctx context.Context, id int) error {
-	_, err := s.db.ExecContext(ctx, "DELETE FROM groups WHERE id = ?", id)
+	res, err := s.db.ExecContext(ctx, "DELETE FROM groups WHERE id = ?", id)
 	if err != nil {
 		return fmt.Errorf("delete group: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("delete group: %w", ErrNotFound)
 	}
 	return nil
 }
@@ -113,9 +129,12 @@ func (s *Store) RegenerateSecret(ctx context.Context, id int) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("generate secret: %w", err)
 	}
-	_, err = s.db.ExecContext(ctx, "UPDATE groups SET secret = ? WHERE id = ?", secret, id)
+	res, err := s.db.ExecContext(ctx, "UPDATE groups SET secret = ? WHERE id = ?", secret, id)
 	if err != nil {
 		return "", fmt.Errorf("update secret: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return "", fmt.Errorf("regenerate secret: %w", ErrNotFound)
 	}
 	return secret, nil
 }
