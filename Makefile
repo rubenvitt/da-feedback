@@ -1,4 +1,4 @@
-.PHONY: dev build docker migrate tailwind tailwind-watch
+.PHONY: dev build docker migrate tailwind tailwind-watch test
 
 BINARY=da-feedback
 TAILWIND=./tailwindcss
