@@ -1,1 +1,25 @@
+# Binary
+da-feedback
+
+# Database
+*.db
+*.db-wal
+*.db-shm
+
+# Tailwind
+static/style.css
+node_modules/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+
+# Superpowers
 .superpowers/
+
+# Env
+.env
