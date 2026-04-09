@@ -15,6 +15,8 @@ type OIDCConfig struct {
 	ClientID     string
 	ClientSecret string
 	RedirectURL  string
+	AdminGroup   string
+	GLGroup      string
 }
 
 type OIDCClient struct {
@@ -49,13 +51,21 @@ func NewOIDCClient(config OIDCConfig) (*OIDCClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	adminGroup := config.AdminGroup
+	if adminGroup == "" {
+		adminGroup = "da-feedback-admin"
+	}
+	glGroup := config.GLGroup
+	if glGroup == "" {
+		glGroup = "da-feedback-gl"
+	}
 	return &OIDCClient{
 		config:      config,
 		authURL:     disc.AuthorizationEndpoint,
 		tokenURL:    disc.TokenEndpoint,
 		userInfoURL: disc.UserinfoEndpoint,
-		adminGroup:  "da-feedback-admin",
-		glGroup:     "da-feedback-gl",
+		adminGroup:  adminGroup,
+		glGroup:     glGroup,
 	}, nil
 }
 

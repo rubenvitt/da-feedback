@@ -53,6 +53,8 @@ func main() {
 			ClientID:     os.Getenv("DAF_OIDC_CLIENT_ID"),
 			ClientSecret: os.Getenv("DAF_OIDC_CLIENT_SECRET"),
 			RedirectURL:  baseURL + "/auth/callback",
+			AdminGroup:   os.Getenv("DAF_ADMIN_GROUP"),
+			GLGroup:      os.Getenv("DAF_GL_GROUP"),
 		})
 		if err != nil {
 			log.Fatalf("oidc: %v", err)
