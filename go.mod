@@ -4,6 +4,7 @@ go 1.26.1
 
 require (
 	github.com/pressly/goose/v3 v3.27.0
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	modernc.org/sqlite v1.48.1
 )
 
