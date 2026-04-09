@@ -1,6 +1,7 @@
 # Binary
 da-feedback
-server
+/server
+tailwindcss
 
 # Database
 *.db
