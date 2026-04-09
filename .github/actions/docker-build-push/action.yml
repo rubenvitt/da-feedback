@@ -1,0 +1,39 @@
+name: Docker Build & Push
+description: Build and push Docker image to GHCR
+
+inputs:
+  registry:
+    description: Container registry
+    default: ghcr.io
+  image_name:
+    description: Image name (owner/repo)
+    required: true
+  token:
+    description: GitHub token for registry auth
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: docker/login-action@v3
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ github.actor }}
+        password: ${{ inputs.token }}
+
+    - uses: docker/metadata-action@v5
+      id: meta
+      with:
+        images: ${{ inputs.registry }}/${{ inputs.image_name }}
+        tags: |
+          type=ref,event=branch
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha
+
+    - uses: docker/build-push-action@v6
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
