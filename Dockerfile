@@ -7,7 +7,7 @@ RUN CGO_ENABLED=0 go build -o da-feedback ./cmd/server
 
 FROM node:lts-alpine AS css
 WORKDIR /build
-RUN npm install -g @tailwindcss/cli
+RUN npm install tailwindcss @tailwindcss/cli
 COPY static ./static
 COPY templates ./templates
 RUN npx @tailwindcss/cli -i static/input.css -o static/style.css --minify
