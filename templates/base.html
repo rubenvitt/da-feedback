@@ -1,0 +1,17 @@
+{{define "base"}}<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{template "title" .}} — DRK Feedback</title>
+    <link rel="stylesheet" href="/static/style.css">
+    {{block "head" .}}{{end}}
+</head>
+<body class="min-h-screen bg-gray-50 text-gray-900">
+    {{block "nav" .}}{{end}}
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        {{template "content" .}}
+    </main>
+    {{block "scripts" .}}{{end}}
+</body>
+</html>{{end}}
