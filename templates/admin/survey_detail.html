@@ -1,0 +1,98 @@
+{{define "title"}}Umfrage{{end}}
+{{define "nav"}}
+<nav class="bg-red-800 text-white px-4 py-3">
+    <div class="max-w-4xl mx-auto flex justify-between items-center">
+        <a href="/admin" class="font-bold">DRK Feedback</a>
+        <div class="flex gap-4 items-center text-sm">
+            {{if eq .User.Role "admin"}}<a href="/admin/groups" class="hover:underline">Gruppen</a>
+            <a href="/admin/users" class="hover:underline">Benutzer</a>
+            <a href="/admin/analysis/global" class="hover:underline">Auswertung</a>{{end}}
+            <span>{{.User.Name}}</span>
+            <a href="/auth/logout" class="hover:underline">Abmelden</a>
+        </div>
+    </div>
+</nav>
+{{end}}
+{{define "content"}}
+{{if .Group}}
+<div class="mb-4">
+    <a href="/admin/groups/{{.Group.ID}}" class="text-sm text-gray-500 hover:underline">&larr; {{.Group.Name}}</a>
+</div>
+{{end}}
+
+<div class="flex justify-between items-start mb-6">
+    <div>
+        <h1 class="text-2xl font-bold">Umfrage</h1>
+        {{if .Evening}}
+        <p class="text-gray-500">
+            {{.Evening.Date.Format "02.01.2006"}}
+            {{if .Evening.Topic}} — {{deref .Evening.Topic}}{{end}}
+        </p>
+        {{end}}
+    </div>
+    <span class="px-3 py-1 rounded text-sm font-medium
+        {{if eq (printf "%s" .Survey.Status) "active"}}bg-green-100 text-green-700
+        {{else if eq (printf "%s" .Survey.Status) "draft"}}bg-yellow-100 text-yellow-700
+        {{else if eq (printf "%s" .Survey.Status) "closed"}}bg-gray-100 text-gray-600
+        {{else}}bg-purple-100 text-purple-700{{end}}">
+        {{.Survey.Status}}
+    </span>
+</div>
+
+<div class="bg-white rounded-lg shadow border border-gray-200 p-5 mb-6">
+    <div class="flex gap-3 flex-wrap items-center">
+        <p class="text-gray-600">Antworten: <strong>{{.ResponseCount}}</strong></p>
+
+        {{if eq (printf "%s" .Survey.Status) "draft"}}
+        <form method="POST" action="/admin/surveys/{{.Survey.ID}}/activate" class="inline">
+            <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition text-sm">
+                Aktivieren
+            </button>
+        </form>
+        {{end}}
+
+        {{if eq (printf "%s" .Survey.Status) "active"}}
+        <form method="POST" action="/admin/surveys/{{.Survey.ID}}/close" class="inline">
+            <button type="submit" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition text-sm">
+                Schließen
+            </button>
+        </form>
+        {{if .Survey.ClosesAt}}
+        <p class="text-sm text-gray-500">Schließt automatisch: {{.Survey.ClosesAt.Format "02.01.2006 15:04"}}</p>
+        {{end}}
+        {{end}}
+
+        {{if eq (printf "%s" .Survey.Status) "closed"}}
+        <form method="POST" action="/admin/surveys/{{.Survey.ID}}/archive" class="inline">
+            <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition text-sm">
+                Archivieren
+            </button>
+        </form>
+        {{if .Evening}}
+        <a href="/admin/analysis/da/{{.Evening.ID}}" class="text-sm text-red-700 hover:underline">Auswertung anzeigen</a>
+        {{end}}
+        {{end}}
+    </div>
+</div>
+
+{{if .Responses}}
+<h2 class="font-bold text-lg mb-3">Antworten ({{.ResponseCount}})</h2>
+<div class="space-y-4">
+    {{range .Responses}}
+    <div class="bg-white rounded-lg shadow border border-gray-200 p-4 text-sm">
+        <p class="text-xs text-gray-400 mb-2">{{.SubmittedAt.Format "02.01.2006 15:04"}}</p>
+        <div class="space-y-1">
+            {{range $k, $v := .Answers}}
+            <div class="flex gap-2">
+                <span class="font-medium text-gray-600">{{$k}}:</span>
+                <span class="text-gray-800">{{$v}}</span>
+            </div>
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+</div>
+{{else}}
+<p class="text-gray-500">Noch keine Antworten eingegangen.</p>
+{{end}}
+{{end}}

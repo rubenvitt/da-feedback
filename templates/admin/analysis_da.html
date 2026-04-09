@@ -1,0 +1,88 @@
+{{define "title"}}DA-Auswertung{{end}}
+{{define "nav"}}
+<nav class="bg-red-800 text-white px-4 py-3">
+    <div class="max-w-4xl mx-auto flex justify-between items-center">
+        <a href="/admin" class="font-bold">DRK Feedback</a>
+        <div class="flex gap-4 items-center text-sm">
+            {{if eq .User.Role "admin"}}<a href="/admin/groups" class="hover:underline">Gruppen</a>
+            <a href="/admin/users" class="hover:underline">Benutzer</a>
+            <a href="/admin/analysis/global" class="hover:underline">Auswertung</a>{{end}}
+            <span>{{.User.Name}}</span>
+            <a href="/auth/logout" class="hover:underline">Abmelden</a>
+        </div>
+    </div>
+</nav>
+{{end}}
+{{define "content"}}
+<div class="mb-4">
+    <a href="javascript:history.back()" class="text-sm text-gray-500 hover:underline">&larr; Zurück</a>
+</div>
+
+<h1 class="text-2xl font-bold mb-2">Auswertung Dienstabend</h1>
+<p class="text-gray-500 mb-6">
+    {{.Stats.Date.Format "02.01.2006"}}
+    {{if .Stats.Topic}} — {{deref .Stats.Topic}}{{end}}
+</p>
+
+<div class="grid md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white rounded-lg shadow border border-gray-200 p-5 text-center">
+        <p class="text-sm text-gray-500 mb-1">Gesamt</p>
+        <p class="text-4xl font-bold text-red-700">{{printf "%.1f" .Stats.AvgOverall}}</p>
+        <p class="text-xs text-gray-400">von 5</p>
+    </div>
+    <div class="bg-white rounded-lg shadow border border-gray-200 p-5 text-center">
+        <p class="text-sm text-gray-500 mb-1">Praxisrelevanz</p>
+        <p class="text-4xl font-bold text-red-700">{{printf "%.1f" .Stats.AvgRelevance}}</p>
+        <p class="text-xs text-gray-400">von 5</p>
+    </div>
+    <div class="bg-white rounded-lg shadow border border-gray-200 p-5 text-center">
+        <p class="text-sm text-gray-500 mb-1">Verständlichkeit</p>
+        <p class="text-4xl font-bold text-red-700">{{printf "%.1f" .Stats.AvgClarity}}</p>
+        <p class="text-xs text-gray-400">von 5</p>
+    </div>
+</div>
+
+<div class="grid md:grid-cols-2 gap-4 mb-6">
+    <div class="bg-white rounded-lg shadow border border-gray-200 p-4 text-center">
+        <p class="text-sm text-gray-500">Antworten</p>
+        <p class="text-2xl font-bold">{{.Stats.ResponseCount}}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow border border-gray-200 p-4 text-center">
+        <p class="text-sm text-gray-500">Teilnehmer</p>
+        <p class="text-2xl font-bold">{{if .Stats.ParticipantCount}}{{derefInt .Stats.ParticipantCount}}{{else}}—{{end}}</p>
+    </div>
+</div>
+
+{{if .Stats.Highlights}}
+<div class="bg-white rounded-lg shadow border border-gray-200 p-5 mb-4">
+    <h2 class="font-bold mb-3">Highlights</h2>
+    <ul class="space-y-2">
+        {{range .Stats.Highlights}}
+        <li class="text-gray-700 pl-3 border-l-2 border-green-400">{{.}}</li>
+        {{end}}
+    </ul>
+</div>
+{{end}}
+
+{{if .Stats.Improvements}}
+<div class="bg-white rounded-lg shadow border border-gray-200 p-5 mb-4">
+    <h2 class="font-bold mb-3">Verbesserungsvorschläge</h2>
+    <ul class="space-y-2">
+        {{range .Stats.Improvements}}
+        <li class="text-gray-700 pl-3 border-l-2 border-yellow-400">{{.}}</li>
+        {{end}}
+    </ul>
+</div>
+{{end}}
+
+{{if .Stats.TopicWishes}}
+<div class="bg-white rounded-lg shadow border border-gray-200 p-5 mb-4">
+    <h2 class="font-bold mb-3">Themenwünsche</h2>
+    <ul class="space-y-2">
+        {{range .Stats.TopicWishes}}
+        <li class="text-gray-700 pl-3 border-l-2 border-blue-400">{{.}}</li>
+        {{end}}
+    </ul>
+</div>
+{{end}}
+{{end}}

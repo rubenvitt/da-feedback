@@ -1,0 +1,59 @@
+package ui
+
+import (
+	"net/http"
+	"strconv"
+
+	"github.com/rubeen/da-feedback/internal/auth"
+)
+
+func (h *AdminHandler) RegisterUserRoutes(mux *http.ServeMux, authMw func(http.Handler) http.Handler, adminMw func(http.Handler) http.Handler) {
+	wrap := func(fn http.HandlerFunc) http.Handler { return adminMw(authMw(fn)) }
+
+	mux.Handle("GET /admin/users", wrap(h.listUsers))
+	mux.Handle("POST /admin/users/{id}/groups", wrap(h.assignGroups))
+}
+
+func (h *AdminHandler) listUsers(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	rows, err := h.sessions.DB().QueryContext(ctx,
+		"SELECT id, name, email, role FROM users ORDER BY name")
+	if err != nil {
+		http.Error(w, "Fehler", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var users []auth.User
+	for rows.Next() {
+		var u auth.User
+		rows.Scan(&u.ID, &u.Name, &u.Email, &u.Role)
+		users = append(users, u)
+	}
+
+	groups, _ := h.groups.List(ctx)
+
+	h.render.Render(w, "admin/users.html", http.StatusOK, map[string]any{
+		"User":   auth.GetSession(r).User,
+		"Users":  users,
+		"Groups": groups,
+	})
+}
+
+func (h *AdminHandler) assignGroups(w http.ResponseWriter, r *http.Request) {
+	userID := r.PathValue("id")
+	r.ParseForm()
+
+	ctx := r.Context()
+	db := h.sessions.DB()
+
+	db.ExecContext(ctx, "DELETE FROM user_groups WHERE user_id = ?", userID)
+
+	for _, gid := range r.Form["group_ids"] {
+		groupID, _ := strconv.Atoi(gid)
+		db.ExecContext(ctx, "INSERT INTO user_groups (user_id, group_id) VALUES (?, ?)", userID, groupID)
+	}
+
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
