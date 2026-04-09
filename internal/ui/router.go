@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/rubeen/da-feedback/internal/analysis"
@@ -22,6 +23,71 @@ type RouterConfig struct {
 	Sessions *auth.SessionStore
 	OIDC     *auth.OIDCClient
 	Renderer *Renderer
+}
+
+type rateLimiter struct {
+	mu       sync.Mutex
+	visitors map[string]*visitor
+}
+
+type visitor struct {
+	tokens   float64
+	lastSeen time.Time
+}
+
+func newRateLimiter() *rateLimiter {
+	rl := &rateLimiter{visitors: make(map[string]*visitor)}
+	go func() {
+		for {
+			time.Sleep(3 * time.Minute)
+			rl.mu.Lock()
+			for ip, v := range rl.visitors {
+				if time.Since(v.lastSeen) > 5*time.Minute {
+					delete(rl.visitors, ip)
+				}
+			}
+			rl.mu.Unlock()
+		}
+	}()
+	return rl
+}
+
+func (rl *rateLimiter) allow(ip string) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	v, exists := rl.visitors[ip]
+	if !exists {
+		rl.visitors[ip] = &visitor{tokens: 29, lastSeen: time.Now()}
+		return true
+	}
+
+	elapsed := time.Since(v.lastSeen).Seconds()
+	v.tokens += elapsed * 0.5
+	if v.tokens > 30 {
+		v.tokens = 30
+	}
+	v.lastSeen = time.Now()
+
+	if v.tokens < 1 {
+		return false
+	}
+	v.tokens--
+	return true
+}
+
+func rateLimitMiddleware(rl *rateLimiter, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ip := r.RemoteAddr
+		if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
+			ip = fwd
+		}
+		if !rl.allow(ip) {
+			http.Error(w, "Zu viele Anfragen", http.StatusTooManyRequests)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func NewRouter(cfg RouterConfig) *http.ServeMux {
@@ -49,8 +115,11 @@ func NewRouter(cfg RouterConfig) *http.ServeMux {
 	}
 
 	// Public routes
+	rl := newRateLimiter()
 	pub := NewPublicHandler(cfg.Groups, cfg.Evenings, cfg.Surveys, cfg.Renderer, cfg.BaseURL)
-	pub.RegisterRoutes(mux)
+	mux.Handle("GET /f/{slugSecret}", rateLimitMiddleware(rl, http.HandlerFunc(pub.ShowSurvey)))
+	mux.Handle("POST /f/{slugSecret}/submit", rateLimitMiddleware(rl, http.HandlerFunc(pub.SubmitSurvey)))
+	mux.Handle("GET /f/{slugSecret}/thanks", http.HandlerFunc(pub.ShowThanks))
 
 	// Admin routes
 	admin := NewAdminHandler(cfg.Groups, cfg.Evenings, cfg.Surveys, cfg.Sessions, cfg.Renderer, cfg.BaseURL)

@@ -1,0 +1,22 @@
+services:
+  da-feedback:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - data:/data
+    environment:
+      - DAF_BASE_URL=https://feedback.example.com
+      - DAF_DB_PATH=/data/feedback.db
+      - DAF_OIDC_ISSUER=https://id.example.com
+      - DAF_OIDC_CLIENT_ID=da-feedback
+      - DAF_OIDC_CLIENT_SECRET=${DAF_OIDC_CLIENT_SECRET}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.da-feedback.rule=Host(`feedback.example.com`)"
+      - "traefik.http.routers.da-feedback.tls.certresolver=letsencrypt"
+      - "traefik.http.services.da-feedback.loadbalancer.server.port=8080"
+
+volumes:
+  data:

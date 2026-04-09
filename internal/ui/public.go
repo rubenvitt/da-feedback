@@ -23,13 +23,7 @@ func NewPublicHandler(g *group.Store, e *evening.Store, s *survey.Store, r *Rend
 	return &PublicHandler{groups: g, evenings: e, surveys: s, render: r, baseURL: baseURL}
 }
 
-func (h *PublicHandler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /f/{slugSecret}", h.showSurvey)
-	mux.HandleFunc("POST /f/{slugSecret}/submit", h.submitSurvey)
-	mux.HandleFunc("GET /f/{slugSecret}/thanks", h.showThanks)
-}
-
-func (h *PublicHandler) showSurvey(w http.ResponseWriter, r *http.Request) {
+func (h *PublicHandler) ShowSurvey(w http.ResponseWriter, r *http.Request) {
 	slugSecret := r.PathValue("slugSecret")
 
 	if strings.HasPrefix(slugSecret, "alle-") {
@@ -57,7 +51,7 @@ func (h *PublicHandler) showSurvey(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *PublicHandler) submitSurvey(w http.ResponseWriter, r *http.Request) {
+func (h *PublicHandler) SubmitSurvey(w http.ResponseWriter, r *http.Request) {
 	slugSecret := r.PathValue("slugSecret")
 	grp, srv, _, err := h.resolve(r, slugSecret)
 	if err != nil {
@@ -111,7 +105,7 @@ func (h *PublicHandler) submitSurvey(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("/f/%s-%s/thanks", grp.Slug, grp.Secret), http.StatusSeeOther)
 }
 
-func (h *PublicHandler) showThanks(w http.ResponseWriter, r *http.Request) {
+func (h *PublicHandler) ShowThanks(w http.ResponseWriter, r *http.Request) {
 	h.render.Render(w, "public/thanks.html", http.StatusOK, nil)
 }
 
