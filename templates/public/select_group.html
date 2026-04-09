@@ -1,0 +1,18 @@
+{{define "title"}}Fachgruppe wählen{{end}}
+{{define "content"}}
+<div class="max-w-lg mx-auto">
+    <h1 class="text-2xl font-bold text-red-700 mb-6">Fachgruppe auswählen</h1>
+    {{if .Groups}}
+    <div class="space-y-3">
+        {{range .Groups}}
+        <a href="/f/{{.Slug}}-{{.Secret}}"
+           class="block p-4 bg-white rounded shadow hover:shadow-md transition border border-gray-200">
+            <span class="font-medium">{{.Name}}</span>
+        </a>
+        {{end}}
+    </div>
+    {{else}}
+    <p class="text-gray-500">Aktuell sind keine Umfragen aktiv.</p>
+    {{end}}
+</div>
+{{end}}
