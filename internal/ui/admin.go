@@ -28,15 +28,16 @@ func NewAdminHandler(g *group.Store, e *evening.Store, s *survey.Store, a *analy
 	return &AdminHandler{groups: g, evenings: e, surveys: s, analysis: a, sessions: sess, render: r, baseURL: baseURL}
 }
 
-func (h *AdminHandler) RegisterRoutes(mux *http.ServeMux, authMw func(http.Handler) http.Handler) {
+func (h *AdminHandler) RegisterRoutes(mux *http.ServeMux, authMw func(http.Handler) http.Handler, adminMw func(http.Handler) http.Handler) {
 	wrap := func(fn http.HandlerFunc) http.Handler { return authMw(fn) }
+	adminWrap := func(fn http.HandlerFunc) http.Handler { return authMw(adminMw(fn)) }
 
 	mux.Handle("GET /admin", wrap(h.dashboard))
 	mux.Handle("GET /admin/groups", wrap(h.listGroups))
 	mux.Handle("POST /admin/groups", wrap(h.createGroup))
 	mux.Handle("GET /admin/groups/{id}", wrap(h.showGroup))
 	mux.Handle("POST /admin/groups/{id}", wrap(h.updateGroup))
-	mux.Handle("POST /admin/groups/{id}/delete", wrap(h.deleteGroup))
+	mux.Handle("POST /admin/groups/{id}/delete", adminWrap(h.deleteGroup))
 	mux.Handle("POST /admin/groups/{id}/regenerate-secret", wrap(h.regenerateSecret))
 	mux.Handle("GET /admin/groups/{id}/qr.png", wrap(h.groupQRCode))
 	mux.Handle("POST /admin/groups/{id}/da", wrap(h.createEvening))

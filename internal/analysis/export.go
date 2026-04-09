@@ -10,14 +10,14 @@ import (
 	"time"
 )
 
-func (s *Store) ExportGroupCSV(ctx context.Context, w io.Writer, groupID int, from, to time.Time) error {
+func (s *Store) ExportGroupCSV(ctx context.Context, w io.Writer, groupID int) error {
 	cw := csv.NewWriter(w)
 	defer cw.Flush()
 
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT e.id, e.date, e.topic, e.participant_count
-		 FROM evenings e WHERE e.group_id = ? AND e.date BETWEEN ? AND ?
-		 ORDER BY e.date`, groupID, from, to)
+		 FROM evenings e WHERE e.group_id = ?
+		 ORDER BY e.date`, groupID)
 	if err != nil {
 		return fmt.Errorf("query evenings: %w", err)
 	}

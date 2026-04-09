@@ -106,13 +106,10 @@ func (h *AnalysisHandler) exportCSV(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	to := time.Now()
-	from := to.AddDate(-1, 0, 0)
-
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 	w.Header().Set("Content-Disposition", "attachment; filename=\"export-"+grp.Slug+".csv\"")
 
-	h.analysis.ExportGroupCSV(r.Context(), w, id, from, to)
+	h.analysis.ExportGroupCSV(r.Context(), w, id)
 }
 
 func (h *AnalysisHandler) surveyPrompt(w http.ResponseWriter, r *http.Request) {

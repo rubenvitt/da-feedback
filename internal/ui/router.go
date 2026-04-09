@@ -135,7 +135,7 @@ func NewRouter(cfg RouterConfig) *http.ServeMux {
 
 	// Admin routes
 	admin := NewAdminHandler(cfg.Groups, cfg.Evenings, cfg.Surveys, cfg.Analysis, cfg.Sessions, cfg.Renderer, cfg.BaseURL)
-	admin.RegisterRoutes(mux, authMw)
+	admin.RegisterRoutes(mux, authMw, adminMw)
 	admin.RegisterSurveyRoutes(mux, authMw)
 	admin.RegisterUserRoutes(mux, authMw, adminMw)
 

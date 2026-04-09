@@ -174,7 +174,7 @@ func (s *Store) GetGroupTrend(ctx context.Context, groupID int, from, to time.Ti
 		 JOIN surveys s ON r.survey_id = s.id
 		 JOIN evenings e ON s.evening_id = e.id
 		 WHERE e.group_id = ? AND e.date BETWEEN ? AND ?
-		 ORDER BY e.date`, groupID, from, to)
+		 ORDER BY e.date`, groupID, from.Format("2006-01-02"), to.Format("2006-01-02"))
 	if err != nil {
 		return nil, fmt.Errorf("get trend: %w", err)
 	}
