@@ -8,7 +8,7 @@ import (
 )
 
 func (h *AdminHandler) RegisterUserRoutes(mux *http.ServeMux, authMw func(http.Handler) http.Handler, adminMw func(http.Handler) http.Handler) {
-	wrap := func(fn http.HandlerFunc) http.Handler { return adminMw(authMw(fn)) }
+	wrap := func(fn http.HandlerFunc) http.Handler { return authMw(adminMw(fn)) }
 
 	mux.Handle("GET /admin/users", wrap(h.listUsers))
 	mux.Handle("POST /admin/users/{id}/groups", wrap(h.assignGroups))

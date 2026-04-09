@@ -13,6 +13,7 @@
     </div>
 </nav>
 {{end}}
+{{define "head"}}<script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"></script>{{end}}
 {{define "content"}}
 <div class="mb-4">
     <a href="/admin/groups/{{.Group.ID}}" class="text-sm text-gray-500 hover:underline">&larr; {{.Group.Name}}</a>
@@ -45,6 +46,10 @@
 </form>
 
 {{if and .Trend .Trend.Points}}
+<div class="bg-white rounded-lg shadow border border-gray-200 p-5 mb-6">
+    <div id="trend-chart" style="height:400px"></div>
+</div>
+
 <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
     <table class="w-full text-sm">
         <thead class="bg-gray-50 border-b border-gray-200">
@@ -73,5 +78,32 @@
 <div class="bg-white rounded-lg shadow border border-gray-200 p-8 text-center text-gray-500">
     Keine Daten für den gewählten Zeitraum.
 </div>
+{{end}}
+{{end}}
+{{define "scripts"}}
+{{if and .Trend .Trend.Points}}
+<script>
+var chart = echarts.init(document.getElementById('trend-chart'));
+var data = {{toJSON .Trend.Points}};
+chart.setOption({
+    tooltip: {trigger: 'axis'},
+    legend: {data: ['Gesamt', 'Praxisrelevanz', 'Verständlichkeit']},
+    xAxis: {
+        type: 'category',
+        data: data.map(function(p) { return p.date.substring(0, 10); })
+    },
+    yAxis: {
+        type: 'value',
+        min: 1,
+        max: 5
+    },
+    series: [
+        {name: 'Gesamt', type: 'line', data: data.map(function(p) { return p.avgOverall; }), smooth: true, itemStyle: {color: '#b91c1c'}},
+        {name: 'Praxisrelevanz', type: 'line', data: data.map(function(p) { return p.avgRelevance; }), smooth: true, itemStyle: {color: '#dc2626'}},
+        {name: 'Verständlichkeit', type: 'line', data: data.map(function(p) { return p.avgClarity; }), smooth: true, itemStyle: {color: '#ef4444'}}
+    ]
+});
+window.addEventListener('resize', function() { chart.resize(); });
+</script>
 {{end}}
 {{end}}

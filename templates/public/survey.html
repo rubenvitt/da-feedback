@@ -12,6 +12,7 @@
 
     <form method="POST" action="/f/{{.Group.Slug}}-{{.Group.Secret}}/submit" class="space-y-6">
         {{range .Questions}}
+        {{$q := .}}
         <div class="space-y-2">
             <label class="block font-medium">
                 {{.Text}}
@@ -19,13 +20,11 @@
             </label>
 
             {{if eq (printf "%s" .Type) "stars"}}
-            <div class="flex gap-1">
+            <div class="star-rating flex gap-1" data-name="{{$q.ID}}" data-required="{{$q.Required}}">
                 {{range seq 5}}
-                <label class="cursor-pointer">
-                    <input type="radio" name="{{.ID}}" value="{{.}}" class="sr-only peer" {{if .Required}}required{{end}}>
-                    <span class="text-2xl peer-checked:text-yellow-400 text-gray-300 hover:text-yellow-300">★</span>
-                </label>
+                <span class="text-3xl cursor-pointer text-gray-300 transition-colors" data-value="{{.}}">&#9733;</span>
                 {{end}}
+                <input type="hidden" name="{{$q.ID}}" value="" {{if $q.Required}}required{{end}}>
             </div>
             {{else if eq (printf "%s" .Type) "text"}}
             <textarea name="{{.ID}}" rows="3" maxlength="500"
@@ -59,4 +58,32 @@
         </button>
     </form>
 </div>
+{{end}}
+{{define "scripts"}}
+<script>
+document.querySelectorAll('.star-rating').forEach(function(rating) {
+    var stars = rating.querySelectorAll('span[data-value]');
+    var input = rating.querySelector('input[type=hidden]');
+
+    function highlight(n) {
+        stars.forEach(function(s) {
+            s.style.color = parseInt(s.dataset.value) <= n ? '#facc15' : '#d1d5db';
+        });
+    }
+
+    stars.forEach(function(star) {
+        star.addEventListener('click', function() {
+            input.value = star.dataset.value;
+            highlight(parseInt(star.dataset.value));
+        });
+        star.addEventListener('mouseenter', function() {
+            highlight(parseInt(star.dataset.value));
+        });
+    });
+
+    rating.addEventListener('mouseleave', function() {
+        highlight(parseInt(input.value) || 0);
+    });
+});
+</script>
 {{end}}
