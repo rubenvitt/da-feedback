@@ -72,21 +72,59 @@
         <a href="/admin/analysis/da/{{.Evening.ID}}" class="text-sm text-red-700 hover:underline">Auswertung anzeigen</a>
         {{end}}
         {{end}}
+
+        {{if gt .ResponseCount 0}}
+        <button type="button" id="copy-prompt-btn" data-survey-id="{{.Survey.ID}}"
+            class="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 transition text-sm">
+            Auswertung kopieren
+        </button>
+        {{end}}
     </div>
 </div>
 
 {{if .Responses}}
 <h2 class="font-bold text-lg mb-3">Antworten ({{.ResponseCount}})</h2>
 <div class="space-y-4">
-    {{range .Responses}}
-    <div class="bg-white rounded-lg shadow border border-gray-200 p-4 text-sm">
-        <p class="text-xs text-gray-400 mb-2">{{.SubmittedAt.Format "02.01.2006 15:04"}}</p>
-        <div class="space-y-1">
-            {{range $k, $v := .Answers}}
-            <div class="flex gap-2">
-                <span class="font-medium text-gray-600">{{$k}}:</span>
-                <span class="text-gray-800">{{$v}}</span>
+    {{$questions := .Survey.Questions}}
+    {{range $i, $resp := .Responses}}
+    <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-100">
+            <span class="text-xs text-gray-400">{{$resp.SubmittedAt.Format "02.01.2006 15:04"}} Uhr</span>
+            <span class="text-xs text-gray-400">#{{add $i 1}}</span>
+        </div>
+        <div class="p-4">
+            <!-- Schulnoten / Sterne -->
+            <div class="flex flex-wrap gap-x-4 gap-y-2 mb-3">
+                {{range $questions}}
+                {{if or (eq (printf "%s" .Type) "schulnote") (eq (printf "%s" .Type) "stars")}}
+                {{$val := index $resp.Answers .ID}}
+                {{if $val}}
+                <div class="flex items-center gap-1.5 text-sm">
+                    <span class="text-gray-500 truncate max-w-[10rem]" title="{{.Text}}">{{.Text}}</span>
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold
+                        {{if eq (printf "%v" $val) "1"}}bg-green-100 text-green-700
+                        {{else if eq (printf "%v" $val) "2"}}bg-lime-100 text-lime-700
+                        {{else if eq (printf "%v" $val) "3"}}bg-yellow-100 text-yellow-700
+                        {{else if eq (printf "%v" $val) "4"}}bg-orange-100 text-orange-700
+                        {{else if eq (printf "%v" $val) "5"}}bg-red-100 text-red-700
+                        {{else}}bg-red-200 text-red-800{{end}}">{{printf "%.0f" $val}}</span>
+                </div>
+                {{end}}
+                {{end}}
+                {{end}}
             </div>
+
+            <!-- Freitext-Antworten -->
+            {{range $questions}}
+            {{if eq (printf "%s" .Type) "text"}}
+            {{$val := index $resp.Answers .ID}}
+            {{if and $val (ne (printf "%v" $val) "")}}
+            <div class="mt-2">
+                <p class="text-xs text-gray-400 mb-0.5">{{.Text}}</p>
+                <p class="text-sm text-gray-700 pl-3 border-l-2 border-red-200">{{printf "%v" $val}}</p>
+            </div>
+            {{end}}
+            {{end}}
             {{end}}
         </div>
     </div>
@@ -95,4 +133,54 @@
 {{else}}
 <p class="text-gray-500">Noch keine Antworten eingegangen.</p>
 {{end}}
+{{end}}
+{{define "scripts"}}
+<script>
+(function () {
+    var btn = document.getElementById('copy-prompt-btn');
+    if (!btn) return;
+
+    btn.addEventListener('click', function () {
+        var surveyId = btn.dataset.surveyId;
+        var originalText = btn.textContent;
+
+        btn.disabled = true;
+        btn.textContent = 'Wird geladen\u2026';
+
+        fetch('/admin/surveys/' + surveyId + '/prompt')
+            .then(function (res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.text();
+            })
+            .then(function (text) {
+                if (navigator.clipboard && window.isSecureContext) {
+                    return navigator.clipboard.writeText(text);
+                }
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+            })
+            .then(function () {
+                btn.textContent = 'Kopiert!';
+                setTimeout(function () {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }, 2000);
+            })
+            .catch(function (err) {
+                console.error('copy-prompt:', err);
+                btn.textContent = 'Fehler';
+                setTimeout(function () {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }, 3000);
+            });
+    });
+}());
+</script>
 {{end}}

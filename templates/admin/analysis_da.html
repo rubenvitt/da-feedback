@@ -19,7 +19,15 @@
     <a href="javascript:history.back()" class="text-sm text-gray-500 hover:underline">&larr; Zurück</a>
 </div>
 
-<h1 class="text-2xl font-bold mb-2">Auswertung Dienstabend</h1>
+<div class="flex justify-between items-start mb-2">
+    <h1 class="text-2xl font-bold">Auswertung Dienstabend</h1>
+    {{if and .SurveyID (gt .Stats.ResponseCount 0)}}
+    <button type="button" id="copy-prompt-btn" data-survey-id="{{.SurveyID}}"
+        class="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 transition text-sm">
+        Auswertung kopieren
+    </button>
+    {{end}}
+</div>
 <p class="text-gray-500 mb-6">
     {{.Stats.Date.Format "02.01.2006"}}
     {{if .Stats.Topic}} — {{deref .Stats.Topic}}{{end}}
@@ -84,6 +92,54 @@
 {{end}}
 {{end}}
 {{define "scripts"}}
+<script>
+(function () {
+    var btn = document.getElementById('copy-prompt-btn');
+    if (!btn) return;
+
+    btn.addEventListener('click', function () {
+        var surveyId = btn.dataset.surveyId;
+        var originalText = btn.textContent;
+
+        btn.disabled = true;
+        btn.textContent = 'Wird geladen\u2026';
+
+        fetch('/admin/surveys/' + surveyId + '/prompt')
+            .then(function (res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.text();
+            })
+            .then(function (text) {
+                if (navigator.clipboard && window.isSecureContext) {
+                    return navigator.clipboard.writeText(text);
+                }
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+            })
+            .then(function () {
+                btn.textContent = 'Kopiert!';
+                setTimeout(function () {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }, 2000);
+            })
+            .catch(function (err) {
+                console.error('copy-prompt:', err);
+                btn.textContent = 'Fehler';
+                setTimeout(function () {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }, 3000);
+            });
+    });
+}());
+</script>
 {{if .Stats.Ratings}}
 <script>
 var chart = echarts.init(document.getElementById('radar-chart'));

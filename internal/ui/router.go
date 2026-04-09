@@ -140,7 +140,7 @@ func NewRouter(cfg RouterConfig) *http.ServeMux {
 	admin.RegisterUserRoutes(mux, authMw, adminMw)
 
 	// Analysis routes
-	anal := NewAnalysisHandler(cfg.Analysis, cfg.Groups, cfg.Renderer)
+	anal := NewAnalysisHandler(cfg.Analysis, cfg.Groups, cfg.Evenings, cfg.Surveys, cfg.Renderer)
 	anal.RegisterRoutes(mux, authMw, adminMw)
 
 	return mux

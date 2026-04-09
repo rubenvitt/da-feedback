@@ -50,7 +50,8 @@ func NewRenderer(templateFS fs.FS) (*Renderer, error) {
 			return a / b
 		},
 		"sub": func(a, b float64) float64 { return a - b },
-		"le": func(a, b float64) bool { return a <= b },
+		"le":  func(a, b float64) bool { return a <= b },
+		"add": func(a, b int) int { return a + b },
 	}
 
 	base := "base.html"
