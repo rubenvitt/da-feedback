@@ -29,35 +29,33 @@
     </a>
 </div>
 
-<form method="GET" class="bg-white rounded-lg shadow border border-gray-200 p-4 mb-6 flex gap-3 flex-wrap items-end">
+<form method="GET" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6 flex gap-3 flex-wrap items-end">
     <div>
         <label class="block text-sm font-medium mb-1">Von</label>
         <input type="date" name="from" value="{{.From}}"
-            class="rounded border border-gray-300 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
+            class="rounded-xl border border-gray-200 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
     </div>
     <div>
         <label class="block text-sm font-medium mb-1">Bis</label>
         <input type="date" name="to" value="{{.To}}"
-            class="rounded border border-gray-300 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
+            class="rounded-xl border border-gray-200 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
     </div>
-    <button type="submit" class="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 transition">
+    <button type="submit" class="bg-red-700 text-white px-4 py-2 rounded-xl hover:bg-red-800 transition">
         Filtern
     </button>
 </form>
 
 {{if and .Trend .Trend.Points}}
-<div class="bg-white rounded-lg shadow border border-gray-200 p-5 mb-6">
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
     <div id="trend-chart" style="height:400px"></div>
 </div>
 
-<div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
     <table class="w-full text-sm">
         <thead class="bg-gray-50 border-b border-gray-200">
             <tr>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Datum</th>
-                <th class="px-4 py-3 text-right font-medium text-gray-600">Gesamt</th>
-                <th class="px-4 py-3 text-right font-medium text-gray-600">Praxisrelevanz</th>
-                <th class="px-4 py-3 text-right font-medium text-gray-600">Verständlichkeit</th>
+                <th class="px-4 py-3 text-right font-medium text-gray-600">Ø Schulnote</th>
                 <th class="px-4 py-3 text-right font-medium text-gray-600">Antworten</th>
             </tr>
         </thead>
@@ -65,9 +63,11 @@
             {{range .Trend.Points}}
             <tr class="hover:bg-gray-50">
                 <td class="px-4 py-3">{{.Date.Format "02.01.2006"}}</td>
-                <td class="px-4 py-3 text-right font-medium">{{printf "%.1f" .AvgOverall}}</td>
-                <td class="px-4 py-3 text-right">{{printf "%.1f" .AvgRelevance}}</td>
-                <td class="px-4 py-3 text-right">{{printf "%.1f" .AvgClarity}}</td>
+                <td class="px-4 py-3 text-right">
+                    <span class="font-bold {{if le .AvgOverall 2.0}}text-green-600{{else if le .AvgOverall 3.5}}text-yellow-600{{else}}text-red-600{{end}}">
+                        {{printf "%.1f" .AvgOverall}}
+                    </span>
+                </td>
                 <td class="px-4 py-3 text-right text-gray-500">{{.Responses}}</td>
             </tr>
             {{end}}
@@ -75,7 +75,7 @@
     </table>
 </div>
 {{else}}
-<div class="bg-white rounded-lg shadow border border-gray-200 p-8 text-center text-gray-500">
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center text-gray-500">
     Keine Daten für den gewählten Zeitraum.
 </div>
 {{end}}
@@ -86,8 +86,13 @@
 var chart = echarts.init(document.getElementById('trend-chart'));
 var data = {{toJSON .Trend.Points}};
 chart.setOption({
-    tooltip: {trigger: 'axis'},
-    legend: {data: ['Gesamt', 'Praxisrelevanz', 'Verständlichkeit']},
+    tooltip: {
+        trigger: 'axis',
+        formatter: function(params) {
+            var p = params[0];
+            return p.axisValue + '<br>Ø ' + p.value.toFixed(1) + ' (Schulnote)';
+        }
+    },
     xAxis: {
         type: 'category',
         data: data.map(function(p) { return p.date.substring(0, 10); })
@@ -95,13 +100,22 @@ chart.setOption({
     yAxis: {
         type: 'value',
         min: 1,
-        max: 5
+        max: 6,
+        inverse: true,
+        axisLabel: {
+            formatter: function(v) { return v.toFixed(0); }
+        }
     },
-    series: [
-        {name: 'Gesamt', type: 'line', data: data.map(function(p) { return p.avgOverall; }), smooth: true, itemStyle: {color: '#b91c1c'}},
-        {name: 'Praxisrelevanz', type: 'line', data: data.map(function(p) { return p.avgRelevance; }), smooth: true, itemStyle: {color: '#dc2626'}},
-        {name: 'Verständlichkeit', type: 'line', data: data.map(function(p) { return p.avgClarity; }), smooth: true, itemStyle: {color: '#ef4444'}}
-    ]
+    series: [{
+        name: 'Ø Schulnote',
+        type: 'line',
+        data: data.map(function(p) { return p.avgOverall; }),
+        smooth: true,
+        areaStyle: {color: 'rgba(185, 28, 28, 0.08)'},
+        lineStyle: {color: '#b91c1c', width: 3},
+        itemStyle: {color: '#b91c1c'},
+        label: {show: true, position: 'top', formatter: '{c}', fontSize: 11}
+    }]
 });
 window.addEventListener('resize', function() { chart.resize(); });
 </script>

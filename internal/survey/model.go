@@ -20,6 +20,7 @@ type QuestionType string
 
 const (
 	TypeStars        QuestionType = "stars"
+	TypeSchulnote    QuestionType = "schulnote"
 	TypeText         QuestionType = "text"
 	TypeSingleChoice QuestionType = "single_choice"
 	TypeMultiChoice  QuestionType = "multi_choice"

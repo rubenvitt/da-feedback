@@ -41,7 +41,7 @@ func main() {
 	groups := group.NewStore(db)
 	evenings := evening.NewStore(db)
 	surveys := survey.NewStore(db)
-	analysisStore := analysis.NewStore(db)
+	analysisStore := analysis.NewStore(db, surveys)
 	sessions := auth.NewSessionStore(db, 7*24*time.Hour)
 
 	// OIDC (optional in dev mode)

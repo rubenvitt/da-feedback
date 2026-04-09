@@ -54,7 +54,9 @@ func TestSubmitFlow(t *testing.T) {
 	s, _ := ss.Create(ctx, e.ID, nil)
 	ss.Activate(ctx, s.ID, 48)
 
-	answers := map[string]any{"q1": 5, "q2": 4, "q3": 3}
+	answers := map[string]any{
+		"q1": 2, "q2": 1, "q3": 3, "q4": 2, "q5": 1, "q6": 2, "q7": 3, "q8": 1,
+	}
 	_, err := ss.SubmitResponse(ctx, s.ID, answers)
 	if err != nil {
 		t.Fatalf("submit: %v", err)

@@ -60,8 +60,8 @@ func TestCreateSurvey(t *testing.T) {
 	if s.Status != survey.StatusDraft {
 		t.Fatalf("expected draft, got %s", s.Status)
 	}
-	if len(s.Questions) != 6 {
-		t.Fatalf("expected 6 standard questions, got %d", len(s.Questions))
+	if len(s.Questions) != 14 {
+		t.Fatalf("expected 14 standard questions, got %d", len(s.Questions))
 	}
 }
 
@@ -130,7 +130,10 @@ func TestSubmitResponse(t *testing.T) {
 	s, _ := env.surveys.Create(ctx, e.ID, nil)
 	env.surveys.Activate(ctx, s.ID, 48)
 
-	answers := map[string]any{"q1": 5, "q2": 4, "q3": 3, "q4": "Gut!", "q5": "", "q6": ""}
+	answers := map[string]any{
+		"q1": 2, "q2": 1, "q3": 3, "q4": 2, "q5": 1, "q6": 2, "q7": 3, "q8": 1,
+		"q9": "Gut!", "q10": "", "q11": "", "q12": "", "q13": "", "q14": "",
+	}
 	r, err := env.surveys.SubmitResponse(ctx, s.ID, answers)
 	if err != nil {
 		t.Fatalf("submit: %v", err)

@@ -1,89 +1,277 @@
 {{define "title"}}Feedback{{end}}
 {{define "content"}}
-<div class="max-w-lg mx-auto">
-    <h1 class="text-2xl font-bold text-red-700 mb-2">Feedback zum Dienstabend</h1>
-    {{if .Evening.Topic}}<p class="text-gray-600 mb-6">{{deref .Evening.Topic}} — {{.Evening.Date.Format "02.01.2006"}}</p>{{end}}
+<div class="max-w-2xl mx-auto">
+    <div class="text-center mb-8">
+        <h1 class="text-2xl font-bold text-red-700">Wie war's?</h1>
+        {{if .Evening.Topic}}<p class="text-gray-500 mt-1">{{deref .Evening.Topic}} — {{.Evening.Date.Format "02.01.2006"}}</p>{{end}}
+        <p class="text-sm text-gray-400 mt-3 leading-relaxed">Nimm dir kurz Zeit und gib uns dein ehrliches Feedback.<br>Das hilft uns, die nächsten Dienstabende noch besser zu machen.</p>
+    </div>
 
     {{if .AlreadySubmitted}}
-    <div class="bg-yellow-50 border border-yellow-200 rounded p-4 mb-6">
-        <p class="text-yellow-800">Du hast bereits Feedback abgegeben. Du kannst trotzdem nochmal absenden.</p>
+    <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6">
+        <p class="text-amber-800 text-sm">Sieht aus, als hättest du schon Feedback gegeben — kein Problem, du kannst gerne nochmal absenden.</p>
     </div>
     {{end}}
 
-    <form method="POST" action="/f/{{.Group.Slug}}-{{.Group.Secret}}/submit" class="space-y-6">
-        {{range .Questions}}
-        {{$q := .}}
-        <div class="space-y-2">
-            <label class="block font-medium">
-                {{.Text}}
-                {{if .Required}}<span class="text-red-600">*</span>{{end}}
-            </label>
+    <form method="POST" action="/f/{{.Group.Slug}}-{{.Group.Secret}}/submit" id="feedback-form">
 
-            {{if eq (printf "%s" .Type) "stars"}}
-            <div class="star-rating flex gap-1" data-name="{{$q.ID}}" data-required="{{$q.Required}}">
+        <!-- Shared hidden inputs (eine einzige Quelle für alle Bewertungen) -->
+        {{range .Questions}}
+        {{if eq (printf "%s" .Type) "schulnote"}}
+        <input type="hidden" name="{{.ID}}" id="input-{{.ID}}" value="">
+        {{end}}
+        {{end}}
+
+        <!-- ── Schulnoten-Matrix ── -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
+            <div class="px-5 pt-5 pb-3">
+                <h2 class="text-lg font-semibold text-gray-800">Dein Eindruck</h2>
+                <p class="text-xs text-gray-400 mt-1">Vergib Schulnoten von 1 (top!) bis 6 (ging gar nicht).</p>
+            </div>
+
+            <!-- Desktop-Matrix (ab 640px) -->
+            <div class="hidden sm:block">
+                <table class="w-full text-sm" id="matrix-desktop">
+                    <thead>
+                        <tr class="border-y border-gray-100">
+                            <th class="py-3 px-5 text-left font-medium text-gray-500 w-1/2"></th>
+                            <th class="py-3 px-1 text-center font-semibold text-green-600 w-[8.3%]">1</th>
+                            <th class="py-3 px-1 text-center font-semibold text-lime-600 w-[8.3%]">2</th>
+                            <th class="py-3 px-1 text-center font-semibold text-yellow-600 w-[8.3%]">3</th>
+                            <th class="py-3 px-1 text-center font-semibold text-orange-600 w-[8.3%]">4</th>
+                            <th class="py-3 px-1 text-center font-semibold text-red-600 w-[8.3%]">5</th>
+                            <th class="py-3 px-1 text-center font-semibold text-red-800 w-[8.3%]">6</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .Questions}}
+                        {{if eq (printf "%s" .Type) "schulnote"}}
+                        <tr class="matrix-row border-b border-gray-50 hover:bg-gray-50/50 transition-colors" data-qid="{{.ID}}" data-required="{{.Required}}">
+                            <td class="py-3.5 px-5 text-gray-700">
+                                {{.Text}}
+                                {{if .Required}}<span class="text-red-400 text-xs ml-0.5">*</span>{{end}}
+                            </td>
+                            {{range seq 6}}
+                            <td class="py-3.5 px-1 text-center">
+                                <button type="button" data-value="{{.}}"
+                                    class="matrix-btn w-9 h-9 rounded-full border-2 border-gray-200 bg-white transition-all duration-150 hover:scale-110 focus:outline-none">
+                                </button>
+                            </td>
+                            {{end}}
+                        </tr>
+                        {{end}}
+                        {{end}}
+                    </tbody>
+                    <tfoot>
+                        <tr class="border-t border-gray-100">
+                            <td class="py-2 px-5"></td>
+                            <td class="py-2 px-1 text-center text-[10px] text-gray-400" colspan="2">Sehr gut</td>
+                            <td class="py-2 px-1" colspan="2"></td>
+                            <td class="py-2 px-1 text-center text-[10px] text-gray-400" colspan="2">Ungenügend</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Mobile-Matrix (unter 640px) -->
+            <div class="sm:hidden px-4 pb-4">
+                <div class="flex justify-between text-[10px] font-medium text-gray-400 mb-3 px-1">
+                    <span class="text-green-600">1 Sehr gut</span>
+                    <span class="text-red-700">Ungenügend 6</span>
+                </div>
+                <div class="space-y-4">
+                    {{range .Questions}}
+                    {{if eq (printf "%s" .Type) "schulnote"}}
+                    <div class="matrix-row" data-qid="{{.ID}}" data-required="{{.Required}}">
+                        <p class="text-sm text-gray-700 mb-2">
+                            {{.Text}}
+                            {{if .Required}}<span class="text-red-400 text-xs ml-0.5">*</span>{{end}}
+                        </p>
+                        <div class="grid grid-cols-6 gap-1.5">
+                            {{range seq 6}}
+                            <button type="button" data-value="{{.}}"
+                                class="matrix-btn h-10 rounded-xl border-2 border-gray-200 bg-white text-xs font-semibold text-gray-400 transition-all duration-150 active:scale-95 focus:outline-none">
+                                {{.}}
+                            </button>
+                            {{end}}
+                        </div>
+                    </div>
+                    {{end}}
+                    {{end}}
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Freitext-Fragen ── -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-1">Sag's uns in deinen Worten</h2>
+            <p class="text-xs text-gray-400 mb-5">Kein Muss — aber jede Antwort hilft uns richtig weiter.</p>
+
+            <div class="space-y-5">
+                {{range .Questions}}
+                {{if eq (printf "%s" .Type) "text"}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">{{.Text}}</label>
+                    <textarea name="{{.ID}}" rows="2" maxlength="500"
+                        class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm focus:border-red-400 focus:ring-2 focus:ring-red-100 focus:bg-white transition-all placeholder:text-gray-300 resize-none"
+                        placeholder="Schreib hier..."></textarea>
+                </div>
+                {{end}}
+                {{end}}
+            </div>
+        </div>
+
+        {{/* Stars-Fallback für alte Umfragen */}}
+        {{range .Questions}}
+        {{if eq (printf "%s" .Type) "stars"}}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
+            <label class="block font-medium mb-2">
+                {{.Text}}
+                {{if .Required}}<span class="text-red-400 text-xs">*</span>{{end}}
+            </label>
+            <div class="star-rating flex gap-1" data-name="{{.ID}}" data-required="{{.Required}}">
                 {{range seq 5}}
                 <span class="text-3xl cursor-pointer text-gray-300 transition-colors" data-value="{{.}}">&#9733;</span>
                 {{end}}
-                <input type="hidden" name="{{$q.ID}}" value="" {{if $q.Required}}required{{end}}>
+                <input type="hidden" name="{{.ID}}" value="" {{if .Required}}required{{end}}>
             </div>
-            {{else if eq (printf "%s" .Type) "text"}}
-            <textarea name="{{.ID}}" rows="3" maxlength="500"
-                class="w-full rounded border border-gray-300 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                placeholder="Optional..."></textarea>
-            {{else if eq (printf "%s" .Type) "single_choice"}}
-            <div class="space-y-1">
-                {{range .Options}}
-                <label class="flex items-center gap-2">
-                    <input type="radio" name="{{.ID}}" value="{{.}}">
-                    <span>{{.}}</span>
-                </label>
-                {{end}}
-            </div>
-            {{else if eq (printf "%s" .Type) "multi_choice"}}
-            <div class="space-y-1">
-                {{range .Options}}
-                <label class="flex items-center gap-2">
-                    <input type="checkbox" name="{{.ID}}" value="{{.}}">
-                    <span>{{.}}</span>
-                </label>
-                {{end}}
-            </div>
-            {{end}}
         </div>
+        {{end}}
         {{end}}
 
         <button type="submit"
-            class="w-full bg-red-700 text-white py-3 rounded font-medium hover:bg-red-800 transition">
-            Feedback absenden
+            class="w-full bg-red-700 text-white py-4 rounded-2xl font-semibold text-lg hover:bg-red-800 active:scale-[0.98] transition-all shadow-sm">
+            Abschicken
         </button>
+        <p class="text-center text-xs text-gray-300 mt-4 mb-2">Alles bleibt anonym — versprochen.</p>
     </form>
 </div>
 {{end}}
+
 {{define "scripts"}}
+<style>
+/* Ausgewählter Button — Farben je Note */
+.matrix-btn[data-value="1"].selected { border-color: #16a34a; background: #dcfce7; color: #15803d; }
+.matrix-btn[data-value="2"].selected { border-color: #65a30d; background: #ecfccb; color: #4d7c0f; }
+.matrix-btn[data-value="3"].selected { border-color: #ca8a04; background: #fef9c3; color: #a16207; }
+.matrix-btn[data-value="4"].selected { border-color: #ea580c; background: #ffedd5; color: #c2410c; }
+.matrix-btn[data-value="5"].selected { border-color: #dc2626; background: #fee2e2; color: #b91c1c; }
+.matrix-btn[data-value="6"].selected { border-color: #991b1b; background: #fecaca; color: #7f1d1d; }
+
+/* Desktop: gefüllter Punkt in der Matrix */
+table .matrix-btn { position: relative; }
+table .matrix-btn::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    background: transparent;
+    transition: background 0.15s;
+}
+table .matrix-btn.selected::after { background: currentColor; }
+table .matrix-btn.selected {
+    border-color: currentColor;
+    box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 15%, transparent);
+}
+
+/* Shake bei fehlender Pflichtantwort */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-5px); }
+    40%, 80% { transform: translateX(5px); }
+}
+.shake { animation: shake 0.35s ease-in-out; }
+.matrix-row.unanswered td:first-child,
+.matrix-row.unanswered > p { color: #dc2626; }
+</style>
+
 <script>
-document.querySelectorAll('.star-rating').forEach(function(rating) {
-    var stars = rating.querySelectorAll('span[data-value]');
-    var input = rating.querySelector('input[type=hidden]');
+(function() {
+    var dotColors = {
+        1: '#16a34a', 2: '#65a30d', 3: '#ca8a04',
+        4: '#ea580c', 5: '#dc2626', 6: '#991b1b'
+    };
 
-    function highlight(n) {
-        stars.forEach(function(s) {
-            s.style.color = parseInt(s.dataset.value) <= n ? '#facc15' : '#d1d5db';
-        });
-    }
+    // Klick auf einen Matrix-Button: shared hidden input + alle
+    // Darstellungen (Desktop & Mobile) für diese Frage synchronisieren
+    document.querySelectorAll('.matrix-row').forEach(function(row) {
+        var qid = row.dataset.qid;
+        var buttons = row.querySelectorAll('.matrix-btn');
 
-    stars.forEach(function(star) {
-        star.addEventListener('click', function() {
-            input.value = star.dataset.value;
-            highlight(parseInt(star.dataset.value));
-        });
-        star.addEventListener('mouseenter', function() {
-            highlight(parseInt(star.dataset.value));
+        buttons.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var val = btn.dataset.value;
+
+                // Shared hidden input setzen
+                document.getElementById('input-' + qid).value = val;
+
+                // ALLE Rows für diese Frage synchronisieren (Desktop + Mobile)
+                document.querySelectorAll('.matrix-row[data-qid="' + qid + '"]').forEach(function(r) {
+                    r.querySelectorAll('.matrix-btn').forEach(function(b) {
+                        b.classList.remove('selected');
+                        b.style.color = '';
+                    });
+                    var match = r.querySelector('.matrix-btn[data-value="' + val + '"]');
+                    if (match) {
+                        match.classList.add('selected');
+                        match.style.color = dotColors[val];
+                    }
+                    r.classList.remove('unanswered', 'shake');
+                });
+            });
         });
     });
 
-    rating.addEventListener('mouseleave', function() {
-        highlight(parseInt(input.value) || 0);
+    // Stern-Rating (Fallback für alte Umfragen)
+    document.querySelectorAll('.star-rating').forEach(function(rating) {
+        var stars = rating.querySelectorAll('span[data-value]');
+        var input = rating.querySelector('input[type=hidden]');
+        function highlight(n) {
+            stars.forEach(function(s) {
+                s.style.color = parseInt(s.dataset.value) <= n ? '#facc15' : '#d1d5db';
+            });
+        }
+        stars.forEach(function(star) {
+            star.addEventListener('click', function() {
+                input.value = star.dataset.value;
+                highlight(parseInt(star.dataset.value));
+            });
+            star.addEventListener('mouseenter', function() {
+                highlight(parseInt(star.dataset.value));
+            });
+        });
+        rating.addEventListener('mouseleave', function() {
+            highlight(parseInt(input.value) || 0);
+        });
     });
-});
+
+    // Validierung: prüft die shared hidden inputs
+    document.getElementById('feedback-form').addEventListener('submit', function(e) {
+        var missing = false;
+        var seen = {};
+
+        document.querySelectorAll('.matrix-row[data-required="true"]').forEach(function(row) {
+            var qid = row.dataset.qid;
+            if (seen[qid]) return; // jede Frage nur einmal prüfen
+            seen[qid] = true;
+
+            var input = document.getElementById('input-' + qid);
+            if (!input || !input.value) {
+                missing = true;
+                // Alle Rows für diese Frage als unanswered markieren
+                document.querySelectorAll('.matrix-row[data-qid="' + qid + '"]').forEach(function(r) {
+                    r.classList.add('unanswered', 'shake');
+                    setTimeout(function() { r.classList.remove('shake'); }, 400);
+                });
+            }
+        });
+
+        if (missing) {
+            e.preventDefault();
+            var first = document.querySelector('.matrix-row.unanswered');
+            if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+})();
 </script>
 {{end}}

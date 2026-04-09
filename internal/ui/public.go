@@ -81,6 +81,15 @@ func (h *PublicHandler) SubmitSurvey(w http.ResponseWriter, r *http.Request) {
 				}
 				answers[q.ID] = n
 			}
+		case survey.TypeSchulnote:
+			if val != "" {
+				n, err := strconv.Atoi(val)
+				if err != nil || n < 1 || n > 6 {
+					http.Error(w, "Ungültige Bewertung", http.StatusBadRequest)
+					return
+				}
+				answers[q.ID] = n
+			}
 		case survey.TypeMultiChoice:
 			answers[q.ID] = r.Form[q.ID]
 		default:

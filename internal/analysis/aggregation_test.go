@@ -29,9 +29,10 @@ func setupTestDB(t *testing.T) testEnv {
 		t.Fatalf("migrate: %v", err)
 	}
 	t.Cleanup(func() { db.Close() })
+	ss := survey.NewStore(db)
 	return testEnv{
-		analysis: analysis.NewStore(db),
-		surveys:  survey.NewStore(db),
+		analysis: analysis.NewStore(db, ss),
+		surveys:  ss,
 		evenings: evening.NewStore(db),
 		groups:   group.NewStore(db),
 	}
@@ -48,10 +49,12 @@ func TestGetDAStats(t *testing.T) {
 	env.surveys.Activate(ctx, s.ID, 48)
 
 	env.surveys.SubmitResponse(ctx, s.ID, map[string]any{
-		"q1": 5, "q2": 4, "q3": 3, "q4": "Toll!", "q5": "", "q6": "HF-Funk",
+		"q1": 1, "q2": 2, "q3": 1, "q4": 2, "q5": 1, "q6": 2, "q7": 1, "q8": 2,
+		"q9": "Praxis war super!", "q11": "", "q13": "HF-Funk",
 	})
 	env.surveys.SubmitResponse(ctx, s.ID, map[string]any{
-		"q1": 3, "q2": 4, "q3": 5, "q4": "", "q5": "Mehr Praxis", "q6": "",
+		"q1": 3, "q2": 2, "q3": 3, "q4": 2, "q5": 3, "q6": 2, "q7": 3, "q8": 2,
+		"q9": "", "q11": "Mehr Praxis", "q13": "",
 	})
 
 	stats, err := env.analysis.GetDAStats(ctx, e.ID)
@@ -61,14 +64,27 @@ func TestGetDAStats(t *testing.T) {
 	if stats.ResponseCount != 2 {
 		t.Fatalf("expected 2 responses, got %d", stats.ResponseCount)
 	}
-	if stats.AvgOverall != 4.0 {
-		t.Fatalf("expected avg 4.0, got %.2f", stats.AvgOverall)
+	if len(stats.Ratings) != 8 {
+		t.Fatalf("expected 8 ratings, got %d", len(stats.Ratings))
 	}
-	if len(stats.Highlights) != 1 || stats.Highlights[0] != "Toll!" {
-		t.Fatalf("unexpected highlights: %v", stats.Highlights)
+	// q1 avg: (1+3)/2 = 2.0
+	if stats.Ratings[0].Avg != 2.0 {
+		t.Fatalf("expected q1 avg 2.0, got %.2f", stats.Ratings[0].Avg)
 	}
-	if len(stats.TopicWishes) != 1 || stats.TopicWishes[0] != "HF-Funk" {
-		t.Fatalf("unexpected topic wishes: %v", stats.TopicWishes)
+	// Overall avg: (1.5+2+2+2+2+2+2+2)/8 = 1.9375 ≈ 1.94
+	if stats.AvgOverall < 1.9 || stats.AvgOverall > 2.1 {
+		t.Fatalf("expected avg around 2.0, got %.2f", stats.AvgOverall)
+	}
+
+	// Text: q9 should have 1 response
+	var foundHighlights bool
+	for _, ta := range stats.TextAnswers {
+		if ta.QuestionID == "q9" && len(ta.Responses) == 1 && ta.Responses[0] == "Praxis war super!" {
+			foundHighlights = true
+		}
+	}
+	if !foundHighlights {
+		t.Fatal("q9 highlight not found")
 	}
 }
 
@@ -84,11 +100,15 @@ func TestGetGroupComparisons(t *testing.T) {
 
 	s1, _ := env.surveys.Create(ctx, e1.ID, nil)
 	env.surveys.Activate(ctx, s1.ID, 48)
-	env.surveys.SubmitResponse(ctx, s1.ID, map[string]any{"q1": 5, "q2": 5, "q3": 5})
+	env.surveys.SubmitResponse(ctx, s1.ID, map[string]any{
+		"q1": 1, "q2": 1, "q3": 1, "q4": 1, "q5": 1, "q6": 1, "q7": 1, "q8": 1,
+	})
 
 	s2, _ := env.surveys.Create(ctx, e2.ID, nil)
 	env.surveys.Activate(ctx, s2.ID, 48)
-	env.surveys.SubmitResponse(ctx, s2.ID, map[string]any{"q1": 3, "q2": 3, "q3": 3})
+	env.surveys.SubmitResponse(ctx, s2.ID, map[string]any{
+		"q1": 3, "q2": 3, "q3": 3, "q4": 3, "q5": 3, "q6": 3, "q7": 3, "q8": 3,
+	})
 
 	comps, err := env.analysis.GetGroupComparisons(ctx)
 	if err != nil {

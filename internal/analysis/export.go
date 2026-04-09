@@ -6,19 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 )
 
 func (s *Store) ExportGroupCSV(ctx context.Context, w io.Writer, groupID int, from, to time.Time) error {
 	cw := csv.NewWriter(w)
 	defer cw.Flush()
-
-	header := []string{"Datum", "Thema", "Teilnehmer", "Antworten",
-		"Gesamt (Ø)", "Praxisrelevanz (Ø)", "Verständlichkeit (Ø)",
-		"Highlights", "Verbesserungen", "Themenwünsche"}
-	if err := cw.Write(header); err != nil {
-		return err
-	}
 
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT e.id, e.date, e.topic, e.participant_count
@@ -28,6 +22,8 @@ func (s *Store) ExportGroupCSV(ctx context.Context, w io.Writer, groupID int, fr
 		return fmt.Errorf("query evenings: %w", err)
 	}
 	defer rows.Close()
+
+	headerWritten := false
 
 	for rows.Next() {
 		var eID int
@@ -41,6 +37,20 @@ func (s *Store) ExportGroupCSV(ctx context.Context, w io.Writer, groupID int, fr
 		stats, err := s.GetDAStats(ctx, eID)
 		if err != nil {
 			continue
+		}
+
+		if !headerWritten {
+			header := []string{"Datum", "Thema", "Teilnehmer", "Antworten", "Gesamt (Ø)"}
+			for _, r := range stats.Ratings {
+				header = append(header, r.QuestionText+" (Ø)")
+			}
+			for _, t := range stats.TextAnswers {
+				header = append(header, t.QuestionText)
+			}
+			if err := cw.Write(header); err != nil {
+				return err
+			}
+			headerWritten = true
 		}
 
 		topicStr := ""
@@ -58,20 +68,35 @@ func (s *Store) ExportGroupCSV(ctx context.Context, w io.Writer, groupID int, fr
 			partStr,
 			fmt.Sprintf("%d", stats.ResponseCount),
 			fmt.Sprintf("%.2f", stats.AvgOverall),
-			fmt.Sprintf("%.2f", stats.AvgRelevance),
-			fmt.Sprintf("%.2f", stats.AvgClarity),
-			joinStrings(stats.Highlights),
-			joinStrings(stats.Improvements),
-			joinStrings(stats.TopicWishes),
+		}
+		for _, r := range stats.Ratings {
+			record = append(record, fmt.Sprintf("%.2f", r.Avg))
+		}
+		for _, t := range stats.TextAnswers {
+			record = append(record, joinStrings(t.Responses))
 		}
 		if err := cw.Write(record); err != nil {
 			return err
 		}
 	}
+
+	if !headerWritten {
+		if err := cw.Write([]string{"Keine Daten"}); err != nil {
+			return err
+		}
+	}
+
 	return rows.Err()
 }
 
 func joinStrings(ss []string) string {
-	b, _ := json.Marshal(ss)
+	if len(ss) == 0 {
+		return ""
+	}
+	var escaped []string
+	for _, s := range ss {
+		escaped = append(escaped, strings.ReplaceAll(s, ";", ","))
+	}
+	b, _ := json.Marshal(escaped)
 	return string(b)
 }

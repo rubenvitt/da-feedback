@@ -18,16 +18,16 @@
 <h1 class="text-2xl font-bold mb-6">Gruppenvergleich</h1>
 
 {{if .Comparisons}}
-<div class="bg-white rounded-lg shadow border border-gray-200 p-5 mb-6">
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
     <div id="comparison-chart" style="height:400px"></div>
 </div>
 
-<div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
     <table class="w-full text-sm">
         <thead class="bg-gray-50 border-b border-gray-200">
             <tr>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Gruppe</th>
-                <th class="px-4 py-3 text-right font-medium text-gray-600">Ø Gesamt</th>
+                <th class="px-4 py-3 text-right font-medium text-gray-600">Ø Schulnote</th>
                 <th class="px-4 py-3 text-right font-medium text-gray-600">Dienstabende</th>
                 <th class="px-4 py-3 text-right font-medium text-gray-600">Antworten gesamt</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600">Aktionen</th>
@@ -38,8 +38,8 @@
             <tr class="hover:bg-gray-50">
                 <td class="px-4 py-3 font-medium">{{.GroupName}}</td>
                 <td class="px-4 py-3 text-right">
-                    <span class="font-bold {{if ge .AvgOverall 4.0}}text-green-600{{else if ge .AvgOverall 3.0}}text-yellow-600{{else}}text-red-600{{end}}">
-                        {{printf "%.2f" .AvgOverall}}
+                    <span class="font-bold {{if le .AvgOverall 2.0}}text-green-600{{else if le .AvgOverall 3.5}}text-yellow-600{{else if gt .AvgOverall 0.0}}text-red-600{{else}}text-gray-400{{end}}">
+                        {{if gt .AvgOverall 0.0}}{{printf "%.1f" .AvgOverall}}{{else}}—{{end}}
                     </span>
                 </td>
                 <td class="px-4 py-3 text-right text-gray-600">{{.TotalDAs}}</td>
@@ -56,7 +56,7 @@
     </table>
 </div>
 {{else}}
-<div class="bg-white rounded-lg shadow border border-gray-200 p-8 text-center text-gray-500">
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center text-gray-500">
     Noch keine Daten vorhanden.
 </div>
 {{end}}
@@ -71,8 +71,9 @@ chart.setOption({
     grid: {left: '20%'},
     xAxis: {
         type: 'value',
-        min: 0,
-        max: 5
+        min: 1,
+        max: 6,
+        inverse: true
     },
     yAxis: {
         type: 'category',
@@ -81,7 +82,8 @@ chart.setOption({
     series: [{
         type: 'bar',
         data: data.map(function(c) {
-            var color = c.avgOverall >= 4.0 ? '#16a34a' : (c.avgOverall >= 3.0 ? '#ca8a04' : '#dc2626');
+            var color = c.avgOverall <= 2.0 ? '#16a34a' : (c.avgOverall <= 3.5 ? '#ca8a04' : '#dc2626');
+            if (c.avgOverall === 0) color = '#d1d5db';
             return {value: c.avgOverall, itemStyle: {color: color}};
         }),
         label: {show: true, position: 'right', formatter: '{c}'}

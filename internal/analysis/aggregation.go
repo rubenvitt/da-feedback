@@ -8,7 +8,21 @@ import (
 	"math"
 	"sort"
 	"time"
+
+	"github.com/rubeen/da-feedback/internal/survey"
 )
+
+type RatingAvg struct {
+	QuestionID   string
+	QuestionText string
+	Avg          float64
+}
+
+type TextResponses struct {
+	QuestionID   string
+	QuestionText string
+	Responses    []string
+}
 
 type DAStats struct {
 	EveningID        int
@@ -16,12 +30,9 @@ type DAStats struct {
 	Topic            *string
 	ResponseCount    int
 	ParticipantCount *int
-	AvgOverall       float64
-	AvgRelevance     float64
-	AvgClarity       float64
-	Highlights       []string
-	Improvements     []string
-	TopicWishes      []string
+	AvgOverall       float64         // Durchschnitt aller Bewertungsfragen
+	Ratings          []RatingAvg     // Pro Bewertungsfrage
+	TextAnswers      []TextResponses // Pro Freitextfrage
 }
 
 type GroupTrend struct {
@@ -29,11 +40,9 @@ type GroupTrend struct {
 }
 
 type TrendPoint struct {
-	Date         time.Time `json:"date"`
-	AvgOverall   float64   `json:"avgOverall"`
-	AvgRelevance float64   `json:"avgRelevance"`
-	AvgClarity   float64   `json:"avgClarity"`
-	Responses    int       `json:"responses"`
+	Date       time.Time `json:"date"`
+	AvgOverall float64   `json:"avgOverall"`
+	Responses  int       `json:"responses"`
 }
 
 type GroupComparison struct {
@@ -45,11 +54,12 @@ type GroupComparison struct {
 }
 
 type Store struct {
-	db *sql.DB
+	db      *sql.DB
+	surveys *survey.Store
 }
 
-func NewStore(db *sql.DB) *Store {
-	return &Store{db: db}
+func NewStore(db *sql.DB, surveys *survey.Store) *Store {
+	return &Store{db: db, surveys: surveys}
 }
 
 func (s *Store) GetDAStats(ctx context.Context, eveningID int) (*DAStats, error) {
@@ -62,6 +72,27 @@ func (s *Store) GetDAStats(ctx context.Context, eveningID int) (*DAStats, error)
 		return nil, fmt.Errorf("get evening: %w", err)
 	}
 
+	// Fragen der Umfrage laden
+	var questions []survey.Question
+	err = s.db.QueryRowContext(ctx,
+		`SELECT s.questions FROM surveys s WHERE s.evening_id = ?`, eveningID,
+	).Scan(scanJSON(&questions))
+	if err != nil {
+		// Fallback: Standard-Fragen verwenden
+		questions = survey.StandardQuestions
+	}
+
+	// Ratings und Texte nach Fragetyp aufteilen
+	var ratingQs, textQs []survey.Question
+	for _, q := range questions {
+		switch q.Type {
+		case survey.TypeSchulnote, survey.TypeStars:
+			ratingQs = append(ratingQs, q)
+		case survey.TypeText:
+			textQs = append(textQs, q)
+		}
+	}
+
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT r.answers FROM responses r
 		 JOIN surveys s ON r.survey_id = s.id
@@ -71,7 +102,8 @@ func (s *Store) GetDAStats(ctx context.Context, eveningID int) (*DAStats, error)
 	}
 	defer rows.Close()
 
-	var sumOverall, sumRelevance, sumClarity float64
+	ratingSums := make(map[string]float64)
+	textCollected := make(map[string][]string)
 	var count int
 
 	for rows.Next() {
@@ -85,32 +117,58 @@ func (s *Store) GetDAStats(ctx context.Context, eveningID int) (*DAStats, error)
 		}
 
 		count++
-		sumOverall += toFloat(answers["q1"])
-		sumRelevance += toFloat(answers["q2"])
-		sumClarity += toFloat(answers["q3"])
 
-		if v, ok := answers["q4"].(string); ok && v != "" {
-			stats.Highlights = append(stats.Highlights, v)
+		for _, q := range ratingQs {
+			ratingSums[q.ID] += toFloat(answers[q.ID])
 		}
-		if v, ok := answers["q5"].(string); ok && v != "" {
-			stats.Improvements = append(stats.Improvements, v)
-		}
-		if v, ok := answers["q6"].(string); ok && v != "" {
-			stats.TopicWishes = append(stats.TopicWishes, v)
+		for _, q := range textQs {
+			if v, ok := answers[q.ID].(string); ok && v != "" {
+				textCollected[q.ID] = append(textCollected[q.ID], v)
+			}
 		}
 	}
 
 	stats.ResponseCount = count
+
 	if count > 0 {
-		stats.AvgOverall = round2(sumOverall / float64(count))
-		stats.AvgRelevance = round2(sumRelevance / float64(count))
-		stats.AvgClarity = round2(sumClarity / float64(count))
+		var totalSum float64
+		for _, q := range ratingQs {
+			avg := round2(ratingSums[q.ID] / float64(count))
+			stats.Ratings = append(stats.Ratings, RatingAvg{
+				QuestionID:   q.ID,
+				QuestionText: q.Text,
+				Avg:          avg,
+			})
+			totalSum += avg
+		}
+		if len(ratingQs) > 0 {
+			stats.AvgOverall = round2(totalSum / float64(len(ratingQs)))
+		}
+	} else {
+		for _, q := range ratingQs {
+			stats.Ratings = append(stats.Ratings, RatingAvg{
+				QuestionID:   q.ID,
+				QuestionText: q.Text,
+				Avg:          0,
+			})
+		}
+	}
+
+	for _, q := range textQs {
+		stats.TextAnswers = append(stats.TextAnswers, TextResponses{
+			QuestionID:   q.ID,
+			QuestionText: q.Text,
+			Responses:    textCollected[q.ID],
+		})
 	}
 
 	return stats, rows.Err()
 }
 
 func (s *Store) GetGroupTrend(ctx context.Context, groupID int, from, to time.Time) (*GroupTrend, error) {
+	// Alle Bewertungs-Fragen-IDs der Gruppe ermitteln (Standard-Fragen als Fallback)
+	ratingIDs := ratingQuestionIDs(survey.StandardQuestions)
+
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT e.date, r.answers FROM responses r
 		 JOIN surveys s ON r.survey_id = s.id
@@ -123,9 +181,9 @@ func (s *Store) GetGroupTrend(ctx context.Context, groupID int, from, to time.Ti
 	defer rows.Close()
 
 	byDate := map[string]*struct {
-		date                                 time.Time
-		sumOverall, sumRelevance, sumClarity float64
-		count                                int
+		date     time.Time
+		totalSum float64
+		count    int
 	}{}
 
 	for rows.Next() {
@@ -137,9 +195,9 @@ func (s *Store) GetGroupTrend(ctx context.Context, groupID int, from, to time.Ti
 		key := date.Format("2006-01-02")
 		if byDate[key] == nil {
 			byDate[key] = &struct {
-				date                                 time.Time
-				sumOverall, sumRelevance, sumClarity float64
-				count                                int
+				date     time.Time
+				totalSum float64
+				count    int
 			}{date: date}
 		}
 
@@ -150,20 +208,27 @@ func (s *Store) GetGroupTrend(ctx context.Context, groupID int, from, to time.Ti
 
 		d := byDate[key]
 		d.count++
-		d.sumOverall += toFloat(answers["q1"])
-		d.sumRelevance += toFloat(answers["q2"])
-		d.sumClarity += toFloat(answers["q3"])
+
+		var ratingSum float64
+		var ratingCount int
+		for _, id := range ratingIDs {
+			if v := toFloat(answers[id]); v > 0 {
+				ratingSum += v
+				ratingCount++
+			}
+		}
+		if ratingCount > 0 {
+			d.totalSum += ratingSum / float64(ratingCount)
+		}
 	}
 
 	trend := &GroupTrend{}
 	for _, d := range byDate {
 		if d.count > 0 {
 			trend.Points = append(trend.Points, TrendPoint{
-				Date:         d.date,
-				AvgOverall:   round2(d.sumOverall / float64(d.count)),
-				AvgRelevance: round2(d.sumRelevance / float64(d.count)),
-				AvgClarity:   round2(d.sumClarity / float64(d.count)),
-				Responses:    d.count,
+				Date:       d.date,
+				AvgOverall: round2(d.totalSum / float64(d.count)),
+				Responses:  d.count,
 			})
 		}
 	}
@@ -176,7 +241,6 @@ func (s *Store) GetGroupTrend(ctx context.Context, groupID int, from, to time.Ti
 func (s *Store) GetGroupComparisons(ctx context.Context) ([]GroupComparison, error) {
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT g.id, g.name,
-		        COALESCE(AVG(CAST(json_extract(r.answers, '$.q1') AS REAL)), 0),
 		        COUNT(DISTINCT e.id),
 		        COUNT(r.id)
 		 FROM groups g
@@ -193,13 +257,101 @@ func (s *Store) GetGroupComparisons(ctx context.Context) ([]GroupComparison, err
 	var comps []GroupComparison
 	for rows.Next() {
 		var c GroupComparison
-		if err := rows.Scan(&c.GroupID, &c.GroupName, &c.AvgOverall, &c.TotalDAs, &c.TotalResp); err != nil {
+		if err := rows.Scan(&c.GroupID, &c.GroupName, &c.TotalDAs, &c.TotalResp); err != nil {
 			return nil, err
 		}
-		c.AvgOverall = round2(c.AvgOverall)
 		comps = append(comps, c)
 	}
-	return comps, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Durchschnitt über alle Bewertungsfragen pro Gruppe berechnen
+	for i, c := range comps {
+		avg, err := s.calcGroupAvg(ctx, c.GroupID)
+		if err == nil {
+			comps[i].AvgOverall = avg
+		}
+	}
+
+	return comps, nil
+}
+
+func (s *Store) calcGroupAvg(ctx context.Context, groupID int) (float64, error) {
+	ratingIDs := ratingQuestionIDs(survey.StandardQuestions)
+
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT r.answers FROM responses r
+		 JOIN surveys s ON r.survey_id = s.id
+		 JOIN evenings e ON s.evening_id = e.id
+		 WHERE e.group_id = ?`, groupID)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	var totalAvg float64
+	var count int
+
+	for rows.Next() {
+		var aJSON string
+		if err := rows.Scan(&aJSON); err != nil {
+			continue
+		}
+		var answers map[string]any
+		if err := json.Unmarshal([]byte(aJSON), &answers); err != nil {
+			continue
+		}
+
+		var rSum float64
+		var rCount int
+		for _, id := range ratingIDs {
+			if v := toFloat(answers[id]); v > 0 {
+				rSum += v
+				rCount++
+			}
+		}
+		if rCount > 0 {
+			totalAvg += rSum / float64(rCount)
+			count++
+		}
+	}
+
+	if count == 0 {
+		return 0, nil
+	}
+	return round2(totalAvg / float64(count)), nil
+}
+
+func ratingQuestionIDs(questions []survey.Question) []string {
+	var ids []string
+	for _, q := range questions {
+		if q.Type == survey.TypeSchulnote || q.Type == survey.TypeStars {
+			ids = append(ids, q.ID)
+		}
+	}
+	return ids
+}
+
+type jsonScanner struct {
+	target any
+}
+
+func scanJSON(target any) *jsonScanner {
+	return &jsonScanner{target: target}
+}
+
+func (js *jsonScanner) Scan(src any) error {
+	var data []byte
+	switch v := src.(type) {
+	case string:
+		data = []byte(v)
+	case []byte:
+		data = v
+	default:
+		return fmt.Errorf("unsupported type for JSON scan: %T", src)
+	}
+	return json.Unmarshal(data, js.target)
 }
 
 func toFloat(v any) float64 {

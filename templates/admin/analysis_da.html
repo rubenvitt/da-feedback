@@ -25,98 +25,121 @@
     {{if .Stats.Topic}} — {{deref .Stats.Topic}}{{end}}
 </p>
 
-<div class="bg-white rounded-lg shadow border border-gray-200 p-5 mb-6">
-    <div id="da-chart" style="height:300px"></div>
-</div>
-
+<!-- Gesamt-Durchschnitt & Statistiken -->
 <div class="grid md:grid-cols-3 gap-4 mb-6">
-    <div class="bg-white rounded-lg shadow border border-gray-200 p-5 text-center">
-        <p class="text-sm text-gray-500 mb-1">Gesamt</p>
-        <p class="text-4xl font-bold text-red-700">{{printf "%.1f" .Stats.AvgOverall}}</p>
-        <p class="text-xs text-gray-400">von 5</p>
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 text-center">
+        <p class="text-sm text-gray-500 mb-1">Gesamtdurchschnitt</p>
+        <p class="text-4xl font-bold {{if le .Stats.AvgOverall 2.0}}text-green-600{{else if le .Stats.AvgOverall 3.5}}text-yellow-600{{else}}text-red-600{{end}}">{{printf "%.1f" .Stats.AvgOverall}}</p>
+        <p class="text-xs text-gray-400">Schulnote (1-6)</p>
     </div>
-    <div class="bg-white rounded-lg shadow border border-gray-200 p-5 text-center">
-        <p class="text-sm text-gray-500 mb-1">Praxisrelevanz</p>
-        <p class="text-4xl font-bold text-red-700">{{printf "%.1f" .Stats.AvgRelevance}}</p>
-        <p class="text-xs text-gray-400">von 5</p>
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 text-center">
+        <p class="text-sm text-gray-500 mb-1">Antworten</p>
+        <p class="text-4xl font-bold text-gray-800">{{.Stats.ResponseCount}}</p>
     </div>
-    <div class="bg-white rounded-lg shadow border border-gray-200 p-5 text-center">
-        <p class="text-sm text-gray-500 mb-1">Verständlichkeit</p>
-        <p class="text-4xl font-bold text-red-700">{{printf "%.1f" .Stats.AvgClarity}}</p>
-        <p class="text-xs text-gray-400">von 5</p>
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 text-center">
+        <p class="text-sm text-gray-500 mb-1">Teilnehmer</p>
+        <p class="text-4xl font-bold text-gray-800">{{if .Stats.ParticipantCount}}{{derefInt .Stats.ParticipantCount}}{{else}}—{{end}}</p>
     </div>
 </div>
 
-<div class="grid md:grid-cols-2 gap-4 mb-6">
-    <div class="bg-white rounded-lg shadow border border-gray-200 p-4 text-center">
-        <p class="text-sm text-gray-500">Antworten</p>
-        <p class="text-2xl font-bold">{{.Stats.ResponseCount}}</p>
-    </div>
-    <div class="bg-white rounded-lg shadow border border-gray-200 p-4 text-center">
-        <p class="text-sm text-gray-500">Teilnehmer</p>
-        <p class="text-2xl font-bold">{{if .Stats.ParticipantCount}}{{derefInt .Stats.ParticipantCount}}{{else}}—{{end}}</p>
-    </div>
+<!-- Radar-Chart -->
+{{if .Stats.Ratings}}
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
+    <h2 class="font-bold mb-3">Bewertungen im Überblick</h2>
+    <div id="radar-chart" style="height:400px"></div>
 </div>
 
-{{if .Stats.Highlights}}
-<div class="bg-white rounded-lg shadow border border-gray-200 p-5 mb-4">
-    <h2 class="font-bold mb-3">Highlights</h2>
+<!-- Einzelne Bewertungen als Balken -->
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
+    <h2 class="font-bold mb-4">Einzelbewertungen</h2>
+    <div class="space-y-3">
+        {{range .Stats.Ratings}}
+        <div>
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-sm text-gray-700">{{.QuestionText}}</span>
+                <span class="text-sm font-bold {{if le .Avg 2.0}}text-green-600{{else if le .Avg 3.5}}text-yellow-600{{else}}text-red-600{{end}}">{{printf "%.1f" .Avg}}</span>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-2.5">
+                <div class="h-2.5 rounded-full transition-all {{if le .Avg 2.0}}bg-green-500{{else if le .Avg 3.5}}bg-yellow-500{{else}}bg-red-500{{end}}"
+                    style="width: {{printf "%.0f" (mul (div (sub 7.0 .Avg) 6.0) 100)}}%"></div>
+            </div>
+        </div>
+        {{end}}
+    </div>
+</div>
+{{end}}
+
+<!-- Freitext-Antworten -->
+{{range .Stats.TextAnswers}}
+{{if .Responses}}
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-4">
+    <h2 class="font-bold mb-3">{{.QuestionText}}</h2>
     <ul class="space-y-2">
-        {{range .Stats.Highlights}}
-        <li class="text-gray-700 pl-3 border-l-2 border-green-400">{{.}}</li>
+        {{range .Responses}}
+        <li class="text-gray-700 text-sm pl-3 border-l-2 border-red-300">{{.}}</li>
         {{end}}
     </ul>
 </div>
 {{end}}
-
-{{if .Stats.Improvements}}
-<div class="bg-white rounded-lg shadow border border-gray-200 p-5 mb-4">
-    <h2 class="font-bold mb-3">Verbesserungsvorschläge</h2>
-    <ul class="space-y-2">
-        {{range .Stats.Improvements}}
-        <li class="text-gray-700 pl-3 border-l-2 border-yellow-400">{{.}}</li>
-        {{end}}
-    </ul>
-</div>
-{{end}}
-
-{{if .Stats.TopicWishes}}
-<div class="bg-white rounded-lg shadow border border-gray-200 p-5 mb-4">
-    <h2 class="font-bold mb-3">Themenwünsche</h2>
-    <ul class="space-y-2">
-        {{range .Stats.TopicWishes}}
-        <li class="text-gray-700 pl-3 border-l-2 border-blue-400">{{.}}</li>
-        {{end}}
-    </ul>
-</div>
 {{end}}
 {{end}}
 {{define "scripts"}}
+{{if .Stats.Ratings}}
 <script>
-var chart = echarts.init(document.getElementById('da-chart'));
+var chart = echarts.init(document.getElementById('radar-chart'));
+var ratings = [
+    {{range .Stats.Ratings}}
+    {name: {{.QuestionText}}, value: {{printf "%.2f" .Avg}}},
+    {{end}}
+];
+
 chart.setOption({
-    tooltip: {},
-    xAxis: {
-        type: 'category',
-        data: ['Gesamt', 'Praxisrelevanz', 'Verständlichkeit']
+    tooltip: {
+        trigger: 'item',
+        formatter: function(p) {
+            return p.name + ': ' + p.value;
+        }
     },
-    yAxis: {
-        type: 'value',
-        min: 0,
-        max: 5,
-        interval: 1
+    radar: {
+        indicator: ratings.map(function(r) {
+            // Kurzform des Namens für Radar-Achsen
+            var short = r.name.length > 30 ? r.name.substring(0, 28) + '…' : r.name;
+            return {name: short, min: 1, max: 6};
+        }),
+        shape: 'polygon',
+        splitNumber: 5,
+        axisName: {
+            color: '#374151',
+            fontSize: 11
+        },
+        splitArea: {
+            areaStyle: {
+                color: ['rgba(220,38,38,0.02)', 'rgba(220,38,38,0.04)', 'rgba(220,38,38,0.06)', 'rgba(220,38,38,0.08)', 'rgba(220,38,38,0.1)']
+            }
+        }
     },
     series: [{
-        type: 'bar',
-        data: [
-            {value: {{printf "%.2f" .Stats.AvgOverall}}, itemStyle: {color: '#b91c1c'}},
-            {value: {{printf "%.2f" .Stats.AvgRelevance}}, itemStyle: {color: '#dc2626'}},
-            {value: {{printf "%.2f" .Stats.AvgClarity}}, itemStyle: {color: '#ef4444'}}
-        ],
-        barWidth: '50%',
-        label: {show: true, position: 'top', formatter: '{c}'}
+        type: 'radar',
+        data: [{
+            // Invertiert: 7 - Wert, damit 1 (beste Note) außen liegt
+            value: ratings.map(function(r) { return 7 - r.value; }),
+            name: 'Bewertung',
+            areaStyle: {color: 'rgba(185, 28, 28, 0.15)'},
+            lineStyle: {color: '#b91c1c', width: 2},
+            itemStyle: {color: '#b91c1c'}
+        }],
+        tooltip: {
+            formatter: function(p) {
+                var lines = [];
+                for (var i = 0; i < ratings.length; i++) {
+                    lines.push(ratings[i].name + ': ' + ratings[i].value.toFixed(1));
+                }
+                return lines.join('<br>');
+            }
+        }
     }]
 });
 window.addEventListener('resize', function() { chart.resize(); });
 </script>
+{{end}}
 {{end}}
