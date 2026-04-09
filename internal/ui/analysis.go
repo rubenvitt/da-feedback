@@ -22,7 +22,7 @@ func NewAnalysisHandler(a *analysis.Store, g *group.Store, r *Renderer) *Analysi
 
 func (h *AnalysisHandler) RegisterRoutes(mux *http.ServeMux, authMw func(http.Handler) http.Handler, adminMw func(http.Handler) http.Handler) {
 	wrap := func(fn http.HandlerFunc) http.Handler { return authMw(fn) }
-	adminWrap := func(fn http.HandlerFunc) http.Handler { return adminMw(authMw(fn)) }
+	adminWrap := func(fn http.HandlerFunc) http.Handler { return authMw(adminMw(fn)) }
 
 	mux.Handle("GET /admin/analysis/da/{id}", wrap(h.daAnalysis))
 	mux.Handle("GET /admin/analysis/group/{id}", wrap(h.groupAnalysis))

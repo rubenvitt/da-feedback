@@ -70,6 +70,7 @@ func main() {
 	baseURL := envOr("DAF_BASE_URL", "http://localhost:8080")
 	mux := ui.NewRouter(ui.RouterConfig{
 		BaseURL:  baseURL,
+		DevMode:  *dev,
 		Groups:   groups,
 		Evenings: evenings,
 		Surveys:  surveys,

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"sort"
 	"time"
 )
 
@@ -28,19 +29,19 @@ type GroupTrend struct {
 }
 
 type TrendPoint struct {
-	Date         time.Time
-	AvgOverall   float64
-	AvgRelevance float64
-	AvgClarity   float64
-	Responses    int
+	Date         time.Time `json:"date"`
+	AvgOverall   float64   `json:"avgOverall"`
+	AvgRelevance float64   `json:"avgRelevance"`
+	AvgClarity   float64   `json:"avgClarity"`
+	Responses    int       `json:"responses"`
 }
 
 type GroupComparison struct {
-	GroupID    int
-	GroupName  string
-	AvgOverall float64
-	TotalDAs   int
-	TotalResp  int
+	GroupID    int     `json:"groupId"`
+	GroupName  string  `json:"groupName"`
+	AvgOverall float64 `json:"avgOverall"`
+	TotalDAs   int     `json:"totalDAs"`
+	TotalResp  int     `json:"totalResp"`
 }
 
 type Store struct {
@@ -166,6 +167,9 @@ func (s *Store) GetGroupTrend(ctx context.Context, groupID int, from, to time.Ti
 			})
 		}
 	}
+	sort.Slice(trend.Points, func(i, j int) bool {
+		return trend.Points[i].Date.Before(trend.Points[j].Date)
+	})
 	return trend, rows.Err()
 }
 

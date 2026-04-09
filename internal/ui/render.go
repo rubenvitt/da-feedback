@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"encoding/json"
 	"html/template"
 	"io/fs"
 	"net/http"
@@ -33,6 +34,13 @@ func NewRenderer(templateFS fs.FS) (*Renderer, error) {
 				return 0
 			}
 			return *p
+		},
+		"toJSON": func(v any) template.JS {
+			b, err := json.Marshal(v)
+			if err != nil {
+				return template.JS("null")
+			}
+			return template.JS(b)
 		},
 	}
 

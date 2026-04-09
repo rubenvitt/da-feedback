@@ -3,6 +3,7 @@ package ui
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -16,6 +17,7 @@ import (
 
 type RouterConfig struct {
 	BaseURL  string
+	DevMode  bool
 	Groups   *group.Store
 	Evenings *evening.Store
 	Surveys  *survey.Store
@@ -96,6 +98,11 @@ func NewRouter(cfg RouterConfig) *http.ServeMux {
 	// Static files
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
+	// Root redirect
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/admin", http.StatusFound)
+	})
+
 	// Health check
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -104,6 +111,11 @@ func NewRouter(cfg RouterConfig) *http.ServeMux {
 	// Auth routes
 	if cfg.OIDC != nil {
 		registerAuthRoutes(mux, cfg.OIDC, cfg.Sessions)
+	}
+
+	// Dev login bypass
+	if cfg.DevMode {
+		registerDevLogin(mux, cfg.Sessions)
 	}
 
 	// Auth middleware
@@ -197,4 +209,30 @@ func generateState() string {
 	b := make([]byte, 16)
 	rand.Read(b)
 	return hex.EncodeToString(b)
+}
+
+func registerDevLogin(mux *http.ServeMux, sessions *auth.SessionStore) {
+	mux.HandleFunc("GET /auth/login", func(w http.ResponseWriter, r *http.Request) {
+		user := &auth.User{
+			ID:    "dev-admin",
+			Name:  "Dev Admin",
+			Email: "admin@localhost",
+			Role:  "admin",
+		}
+		sess, err := sessions.Create(r.Context(), user)
+		if err != nil {
+			http.Error(w, "Session error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     "daf_session",
+			Value:    sess.ID,
+			MaxAge:   int(7 * 24 * time.Hour / time.Second),
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+			Path:     "/",
+		})
+		log.Println("dev login: created admin session")
+		http.Redirect(w, r, "/admin", http.StatusFound)
+	})
 }
