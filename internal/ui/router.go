@@ -134,7 +134,7 @@ func NewRouter(cfg RouterConfig) *http.ServeMux {
 	mux.Handle("GET /f/{slugSecret}/thanks", http.HandlerFunc(pub.ShowThanks))
 
 	// Admin routes
-	admin := NewAdminHandler(cfg.Groups, cfg.Evenings, cfg.Surveys, cfg.Sessions, cfg.Renderer, cfg.BaseURL)
+	admin := NewAdminHandler(cfg.Groups, cfg.Evenings, cfg.Surveys, cfg.Analysis, cfg.Sessions, cfg.Renderer, cfg.BaseURL)
 	admin.RegisterRoutes(mux, authMw)
 	admin.RegisterSurveyRoutes(mux, authMw)
 	admin.RegisterUserRoutes(mux, authMw, adminMw)

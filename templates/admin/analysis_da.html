@@ -51,7 +51,7 @@
 </div>
 
 <!-- Radar-Chart -->
-{{if .Stats.Ratings}}
+{{if and .Stats.Ratings (gt .Stats.ResponseCount 0)}}
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
     <h2 class="font-bold mb-3">Bewertungen im Überblick</h2>
     <div id="radar-chart" style="height:400px"></div>

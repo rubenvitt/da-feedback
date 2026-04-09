@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/rubeen/da-feedback/internal/analysis"
 	"github.com/rubeen/da-feedback/internal/auth"
 	"github.com/rubeen/da-feedback/internal/evening"
 	"github.com/rubeen/da-feedback/internal/group"
@@ -17,13 +18,14 @@ type AdminHandler struct {
 	groups   *group.Store
 	evenings *evening.Store
 	surveys  *survey.Store
+	analysis *analysis.Store
 	sessions *auth.SessionStore
 	render   *Renderer
 	baseURL  string
 }
 
-func NewAdminHandler(g *group.Store, e *evening.Store, s *survey.Store, sess *auth.SessionStore, r *Renderer, baseURL string) *AdminHandler {
-	return &AdminHandler{groups: g, evenings: e, surveys: s, sessions: sess, render: r, baseURL: baseURL}
+func NewAdminHandler(g *group.Store, e *evening.Store, s *survey.Store, a *analysis.Store, sess *auth.SessionStore, r *Renderer, baseURL string) *AdminHandler {
+	return &AdminHandler{groups: g, evenings: e, surveys: s, analysis: a, sessions: sess, render: r, baseURL: baseURL}
 }
 
 func (h *AdminHandler) RegisterRoutes(mux *http.ServeMux, authMw func(http.Handler) http.Handler) {
@@ -97,13 +99,18 @@ func (h *AdminHandler) showGroup(w http.ResponseWriter, r *http.Request) {
 	evenings, _ := h.evenings.ListByGroup(ctx, id)
 
 	type EveningWithSurvey struct {
-		Evening evening.Evening
-		Survey  *survey.Survey
+		Evening       evening.Evening
+		Survey        *survey.Survey
+		ResponseCount int
 	}
 	var items []EveningWithSurvey
 	for _, e := range evenings {
 		s, _ := h.surveys.GetByEveningID(ctx, e.ID)
-		items = append(items, EveningWithSurvey{Evening: e, Survey: s})
+		var rc int
+		if s != nil {
+			rc, _ = h.surveys.GetResponseCount(ctx, s.ID)
+		}
+		items = append(items, EveningWithSurvey{Evening: e, Survey: s, ResponseCount: rc})
 	}
 
 	feedbackURL := qrcode.FeedbackURL(h.baseURL, grp.Slug, grp.Secret)

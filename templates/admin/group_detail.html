@@ -83,38 +83,42 @@
 </div>
 
 <h2 class="font-bold text-lg mb-3">Dienstabende</h2>
-<div class="space-y-3">
+<div class="space-y-2">
     {{range .Items}}
-    <div class="bg-white rounded-lg shadow border border-gray-200 p-4">
-        <div class="flex justify-between items-start">
-            <div>
-                <p class="font-medium">{{.Evening.Date.Format "02.01.2006"}}</p>
-                {{if .Evening.Topic}}<p class="text-sm text-gray-600">{{deref .Evening.Topic}}</p>{{end}}
-                {{if .Evening.ParticipantCount}}<p class="text-xs text-gray-400">{{derefInt .Evening.ParticipantCount}} Teilnehmer</p>{{end}}
-            </div>
-            <div class="flex gap-2 items-center">
-                {{if .Survey}}
-                <span class="text-xs px-2 py-1 rounded
+    {{if .Survey}}
+    <a href="/admin/surveys/{{.Survey.ID}}" class="block bg-white rounded-lg border border-gray-200 p-4 hover:border-red-300 hover:shadow-md transition-all group">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-3 min-w-0">
+                <span class="text-xs font-medium px-2 py-0.5 rounded-full shrink-0
                     {{if eq (printf "%s" .Survey.Status) "active"}}bg-green-100 text-green-700
                     {{else if eq (printf "%s" .Survey.Status) "draft"}}bg-yellow-100 text-yellow-700
                     {{else if eq (printf "%s" .Survey.Status) "closed"}}bg-gray-100 text-gray-600
                     {{else}}bg-purple-100 text-purple-700{{end}}">
                     {{.Survey.Status}}
                 </span>
-                <a href="/admin/surveys/{{.Survey.ID}}" class="text-sm text-red-700 hover:underline">Umfrage</a>
-                <a href="/admin/analysis/da/{{.Evening.ID}}" class="text-sm text-gray-500 hover:underline">Auswertung</a>
-                {{else}}
-                <form method="POST" action="/admin/da/{{.Evening.ID}}/survey" class="inline">
-                    <button type="submit" class="text-sm bg-red-700 text-white px-3 py-1 rounded hover:bg-red-800 transition">
-                        Umfrage erstellen
-                    </button>
-                </form>
-                {{end}}
-                <a href="/admin/da/{{.Evening.ID}}" class="text-sm text-gray-500 hover:underline">Bearbeiten</a>
+                <div class="min-w-0">
+                    <p class="font-medium text-gray-900 group-hover:text-red-700 transition-colors">{{.Evening.Date.Format "02.01.2006"}}{{if .Evening.Topic}} — {{deref .Evening.Topic}}{{end}}</p>
+                    <p class="text-xs text-gray-400">{{if .Evening.ParticipantCount}}{{derefInt .Evening.ParticipantCount}} Teilnehmer · {{end}}{{.ResponseCount}} Antworten</p>
+                </div>
             </div>
+            <svg class="w-5 h-5 text-gray-300 group-hover:text-red-400 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
         </div>
-    </div>
+    </a>
     {{else}}
+    <div class="bg-white rounded-lg border border-gray-200 p-4 flex justify-between items-center">
+        <div>
+            <p class="font-medium text-gray-900">{{.Evening.Date.Format "02.01.2006"}}{{if .Evening.Topic}} — {{deref .Evening.Topic}}{{end}}</p>
+            {{if .Evening.ParticipantCount}}<p class="text-xs text-gray-400">{{derefInt .Evening.ParticipantCount}} Teilnehmer</p>{{end}}
+        </div>
+        <form method="POST" action="/admin/da/{{.Evening.ID}}/survey" class="inline">
+            <button type="submit" class="text-sm bg-red-700 text-white px-3 py-1.5 rounded hover:bg-red-800 transition">
+                Umfrage erstellen
+            </button>
+        </form>
+    </div>
+    {{end}}
+    {{end}}
+    {{if not .Items}}
     <p class="text-gray-500">Noch keine Dienstabende.</p>
     {{end}}
 </div>

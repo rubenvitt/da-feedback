@@ -13,6 +13,9 @@
     </div>
 </nav>
 {{end}}
+{{define "head"}}
+{{if .Stats}}<script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"></script>{{end}}
+{{end}}
 {{define "content"}}
 {{if .Group}}
 <div class="mb-4">
@@ -22,39 +25,57 @@
 
 <div class="flex justify-between items-start mb-6">
     <div>
-        <h1 class="text-2xl font-bold">Umfrage</h1>
-        {{if .Evening}}
-        <p class="text-gray-500">
+        <h1 class="text-2xl font-bold">
+            {{if .Evening}}
             {{.Evening.Date.Format "02.01.2006"}}
             {{if .Evening.Topic}} — {{deref .Evening.Topic}}{{end}}
-        </p>
+            {{else}}Umfrage{{end}}
+        </h1>
+        <p class="text-sm text-gray-500 mt-1">{{.ResponseCount}} Antworten</p>
+    </div>
+    <div class="flex gap-2 items-center">
+        <span class="px-3 py-1 rounded-full text-sm font-medium
+            {{if eq (printf "%s" .Survey.Status) "active"}}bg-green-100 text-green-700
+            {{else if eq (printf "%s" .Survey.Status) "draft"}}bg-yellow-100 text-yellow-700
+            {{else if eq (printf "%s" .Survey.Status) "closed"}}bg-gray-100 text-gray-600
+            {{else}}bg-purple-100 text-purple-700{{end}}">
+            {{.Survey.Status}}
+        </span>
+        {{if .Evening}}
+        <a href="/admin/da/{{.Evening.ID}}" class="text-sm text-gray-400 hover:text-gray-600 transition" title="Dienstabend bearbeiten">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        </a>
         {{end}}
     </div>
-    <span class="px-3 py-1 rounded text-sm font-medium
-        {{if eq (printf "%s" .Survey.Status) "active"}}bg-green-100 text-green-700
-        {{else if eq (printf "%s" .Survey.Status) "draft"}}bg-yellow-100 text-yellow-700
-        {{else if eq (printf "%s" .Survey.Status) "closed"}}bg-gray-100 text-gray-600
-        {{else}}bg-purple-100 text-purple-700{{end}}">
-        {{.Survey.Status}}
-    </span>
 </div>
 
+<!-- Aktionen -->
 <div class="bg-white rounded-lg shadow border border-gray-200 p-5 mb-6">
     <div class="flex gap-3 flex-wrap items-center">
-        <p class="text-gray-600">Antworten: <strong>{{.ResponseCount}}</strong></p>
-
         {{if eq (printf "%s" .Survey.Status) "draft"}}
-        <form method="POST" action="/admin/surveys/{{.Survey.ID}}/activate" class="inline">
+        <form method="POST" action="/admin/surveys/{{.Survey.ID}}/activate" class="inline" id="activate-form">
+            {{if .ActiveSurveyExists}}
+            <button type="button" id="activate-btn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition text-sm">
+                Aktivieren
+            </button>
+            <button type="submit" id="activate-confirm-btn" class="hidden bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition text-sm">
+                Aktive Umfrage schließen & aktivieren?
+            </button>
+            {{else}}
             <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition text-sm">
                 Aktivieren
             </button>
+            {{end}}
         </form>
         {{end}}
 
         {{if eq (printf "%s" .Survey.Status) "active"}}
-        <form method="POST" action="/admin/surveys/{{.Survey.ID}}/close" class="inline">
-            <button type="submit" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition text-sm">
+        <form method="POST" action="/admin/surveys/{{.Survey.ID}}/close" class="inline" id="close-form">
+            <button type="button" id="close-btn" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition text-sm">
                 Schließen
+            </button>
+            <button type="submit" id="close-confirm-btn" class="hidden bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition text-sm">
+                Wirklich schließen?
             </button>
         </form>
         {{if .Survey.ClosesAt}}
@@ -68,9 +89,6 @@
                 Archivieren
             </button>
         </form>
-        {{if .Evening}}
-        <a href="/admin/analysis/da/{{.Evening.ID}}" class="text-sm text-red-700 hover:underline">Auswertung anzeigen</a>
-        {{end}}
         {{end}}
 
         {{if gt .ResponseCount 0}}
@@ -82,59 +100,105 @@
     </div>
 </div>
 
-{{if .Responses}}
-<h2 class="font-bold text-lg mb-3">Antworten ({{.ResponseCount}})</h2>
-<div class="space-y-4">
-    {{$questions := .Survey.Questions}}
-    {{range $i, $resp := .Responses}}
-    <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-        <div class="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-100">
-            <span class="text-xs text-gray-400">{{$resp.SubmittedAt.Format "02.01.2006 15:04"}} Uhr</span>
-            <span class="text-xs text-gray-400">#{{add $i 1}}</span>
-        </div>
-        <div class="p-4">
-            <!-- Schulnoten / Sterne -->
-            <div class="flex flex-wrap gap-x-4 gap-y-2 mb-3">
-                {{range $questions}}
-                {{if or (eq (printf "%s" .Type) "schulnote") (eq (printf "%s" .Type) "stars")}}
-                {{$val := index $resp.Answers .ID}}
-                {{if $val}}
-                <div class="flex items-center gap-1.5 text-sm">
-                    <span class="text-gray-500 truncate max-w-[10rem]" title="{{.Text}}">{{.Text}}</span>
-                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold
-                        {{if eq (printf "%v" $val) "1"}}bg-green-100 text-green-700
-                        {{else if eq (printf "%v" $val) "2"}}bg-lime-100 text-lime-700
-                        {{else if eq (printf "%v" $val) "3"}}bg-yellow-100 text-yellow-700
-                        {{else if eq (printf "%v" $val) "4"}}bg-orange-100 text-orange-700
-                        {{else if eq (printf "%v" $val) "5"}}bg-red-100 text-red-700
-                        {{else}}bg-red-200 text-red-800{{end}}">{{printf "%.0f" $val}}</span>
-                </div>
-                {{end}}
-                {{end}}
-                {{end}}
-            </div>
-
-            <!-- Freitext-Antworten -->
-            {{range $questions}}
-            {{if eq (printf "%s" .Type) "text"}}
-            {{$val := index $resp.Answers .ID}}
-            {{if and $val (ne (printf "%v" $val) "")}}
-            <div class="mt-2">
-                <p class="text-xs text-gray-400 mb-0.5">{{.Text}}</p>
-                <p class="text-sm text-gray-700 pl-3 border-l-2 border-red-200">{{printf "%v" $val}}</p>
-            </div>
-            {{end}}
-            {{end}}
-            {{end}}
-        </div>
+{{if .Stats}}
+<!-- Gesamt-Durchschnitt & Statistiken -->
+<div class="grid md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 text-center">
+        <p class="text-sm text-gray-500 mb-1">Gesamtdurchschnitt</p>
+        <p class="text-4xl font-bold {{if le .Stats.AvgOverall 2.0}}text-green-600{{else if le .Stats.AvgOverall 3.5}}text-yellow-600{{else}}text-red-600{{end}}">{{printf "%.1f" .Stats.AvgOverall}}</p>
+        <p class="text-xs text-gray-400">Schulnote (1-6)</p>
     </div>
-    {{end}}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 text-center">
+        <p class="text-sm text-gray-500 mb-1">Antworten</p>
+        <p class="text-4xl font-bold text-gray-800">{{.Stats.ResponseCount}}</p>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 text-center">
+        <p class="text-sm text-gray-500 mb-1">Teilnehmer</p>
+        <p class="text-4xl font-bold text-gray-800">{{if .Stats.ParticipantCount}}{{derefInt .Stats.ParticipantCount}}{{else}}—{{end}}</p>
+    </div>
 </div>
-{{else}}
-<p class="text-gray-500">Noch keine Antworten eingegangen.</p>
+
+<!-- Radar-Chart -->
+{{if and .Stats.Ratings (gt .Stats.ResponseCount 0)}}
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
+    <h2 class="font-bold mb-3">Bewertungen im Überblick</h2>
+    <div id="radar-chart" style="height:400px"></div>
+</div>
+
+<!-- Einzelne Bewertungen als Balken -->
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
+    <h2 class="font-bold mb-4">Einzelbewertungen</h2>
+    <div class="space-y-3">
+        {{range .Stats.Ratings}}
+        <div>
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-sm text-gray-700">{{.QuestionText}}</span>
+                <span class="text-sm font-bold {{if le .Avg 2.0}}text-green-600{{else if le .Avg 3.5}}text-yellow-600{{else}}text-red-600{{end}}">{{printf "%.1f" .Avg}}</span>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-2.5">
+                <div class="h-2.5 rounded-full transition-all {{if le .Avg 2.0}}bg-green-500{{else if le .Avg 3.5}}bg-yellow-500{{else}}bg-red-500{{end}}"
+                    style="width: {{printf "%.0f" (mul (div (sub 7.0 .Avg) 6.0) 100)}}%"></div>
+            </div>
+        </div>
+        {{end}}
+    </div>
+</div>
+{{end}}
+
+<!-- Freitext-Antworten -->
+{{range .Stats.TextAnswers}}
+{{if .Responses}}
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-4">
+    <h2 class="font-bold mb-3">{{.QuestionText}}</h2>
+    <ul class="space-y-2">
+        {{range .Responses}}
+        <li class="text-gray-700 text-sm pl-3 border-l-2 border-red-300">{{.}}</li>
+        {{end}}
+    </ul>
+</div>
+{{end}}
+{{end}}
+
+{{else if eq (printf "%s" .Survey.Status) "active"}}
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+    <div class="text-4xl mb-3">📊</div>
+    <p class="text-gray-600 font-medium">Die Umfrage läuft noch</p>
+    <p class="text-sm text-gray-400 mt-1">Die Auswertung wird verfügbar, sobald die Umfrage geschlossen wird.</p>
+</div>
+{{else if eq (printf "%s" .Survey.Status) "draft"}}
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+    <div class="text-4xl mb-3">📝</div>
+    <p class="text-gray-600 font-medium">Entwurf</p>
+    <p class="text-sm text-gray-400 mt-1">Aktiviere die Umfrage, um Antworten zu sammeln.</p>
+</div>
 {{end}}
 {{end}}
 {{define "scripts"}}
+<script>
+(function () {
+    function inlineConfirm(triggerId, confirmId) {
+        var trigger = document.getElementById(triggerId);
+        var confirm = document.getElementById(confirmId);
+        if (!trigger || !confirm) return;
+
+        var timer;
+        trigger.addEventListener('click', function () {
+            trigger.classList.add('hidden');
+            confirm.classList.remove('hidden');
+            timer = setTimeout(function () {
+                confirm.classList.add('hidden');
+                trigger.classList.remove('hidden');
+            }, 4000);
+        });
+        confirm.addEventListener('click', function () {
+            clearTimeout(timer);
+        });
+    }
+
+    inlineConfirm('close-btn', 'close-confirm-btn');
+    inlineConfirm('activate-btn', 'activate-confirm-btn');
+}());
+</script>
 <script>
 (function () {
     var btn = document.getElementById('copy-prompt-btn');
@@ -183,4 +247,60 @@
     });
 }());
 </script>
+{{if and .Stats .Stats.Ratings}}
+<script>
+var chart = echarts.init(document.getElementById('radar-chart'));
+var ratings = [
+    {{range .Stats.Ratings}}
+    {name: {{.QuestionText}}, value: {{printf "%.2f" .Avg}}},
+    {{end}}
+];
+
+chart.setOption({
+    tooltip: {
+        trigger: 'item',
+        formatter: function(p) {
+            return p.name + ': ' + p.value;
+        }
+    },
+    radar: {
+        indicator: ratings.map(function(r) {
+            var short = r.name.length > 30 ? r.name.substring(0, 28) + '\u2026' : r.name;
+            return {name: short, min: 1, max: 6};
+        }),
+        shape: 'polygon',
+        splitNumber: 5,
+        axisName: {
+            color: '#374151',
+            fontSize: 11
+        },
+        splitArea: {
+            areaStyle: {
+                color: ['rgba(220,38,38,0.02)', 'rgba(220,38,38,0.04)', 'rgba(220,38,38,0.06)', 'rgba(220,38,38,0.08)', 'rgba(220,38,38,0.1)']
+            }
+        }
+    },
+    series: [{
+        type: 'radar',
+        data: [{
+            value: ratings.map(function(r) { return 7 - r.value; }),
+            name: 'Bewertung',
+            areaStyle: {color: 'rgba(185, 28, 28, 0.15)'},
+            lineStyle: {color: '#b91c1c', width: 2},
+            itemStyle: {color: '#b91c1c'}
+        }],
+        tooltip: {
+            formatter: function(p) {
+                var lines = [];
+                for (var i = 0; i < ratings.length; i++) {
+                    lines.push(ratings[i].name + ': ' + ratings[i].value.toFixed(1));
+                }
+                return lines.join('<br>');
+            }
+        }
+    }]
+});
+window.addEventListener('resize', function() { chart.resize(); });
+</script>
+{{end}}
 {{end}}

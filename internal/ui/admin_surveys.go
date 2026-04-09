@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/rubeen/da-feedback/internal/auth"
+	"github.com/rubeen/da-feedback/internal/survey"
 )
 
 func (h *AdminHandler) RegisterSurveyRoutes(mux *http.ServeMux, authMw func(http.Handler) http.Handler) {
@@ -40,17 +41,29 @@ func (h *AdminHandler) showSurvey(w http.ResponseWriter, r *http.Request) {
 
 	eve, _ := h.evenings.GetByID(ctx, srv.EveningID)
 	grp, _ := h.groups.GetByID(ctx, eve.GroupID)
-	responses, _ := h.surveys.GetResponses(ctx, id)
 	count, _ := h.surveys.GetResponseCount(ctx, id)
 
-	h.render.Render(w, "admin/survey_detail.html", http.StatusOK, map[string]any{
+	data := map[string]any{
 		"User":          auth.GetSession(r).User,
 		"Survey":        srv,
 		"Evening":       eve,
 		"Group":         grp,
-		"Responses":     responses,
 		"ResponseCount": count,
-	})
+	}
+
+	if srv.Status == survey.StatusDraft {
+		if active, err := h.surveys.GetActiveForGroup(ctx, eve.GroupID); err == nil && active != nil {
+			data["ActiveSurveyExists"] = true
+		}
+	}
+
+	if srv.Status == survey.StatusClosed || srv.Status == survey.StatusArchived {
+		if stats, err := h.analysis.GetDAStats(ctx, srv.EveningID); err == nil {
+			data["Stats"] = stats
+		}
+	}
+
+	h.render.Render(w, "admin/survey_detail.html", http.StatusOK, data)
 }
 
 func (h *AdminHandler) activateSurvey(w http.ResponseWriter, r *http.Request) {
