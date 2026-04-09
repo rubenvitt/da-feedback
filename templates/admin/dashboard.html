@@ -1,9 +1,12 @@
 {{define "title"}}Dashboard{{end}}
 {{define "nav"}}
 <nav class="bg-red-800 text-white px-4 py-3">
-    <div class="max-w-4xl mx-auto flex justify-between items-center">
+    <div class="max-w-4xl mx-auto flex flex-wrap justify-between items-center">
         <a href="/admin" class="font-bold">DA-Feedback</a>
-        <div class="flex gap-4 items-center text-sm">
+        <button type="button" class="md:hidden" onclick="var n=document.getElementById('nav-links');n.classList.toggle('hidden');n.classList.toggle('flex')" aria-label="Menü">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div id="nav-links" class="hidden md:flex w-full md:w-auto flex-col md:flex-row gap-2 md:gap-4 mt-2 md:mt-0 items-start md:items-center text-sm">
             {{if eq .User.Role "admin"}}<a href="/admin/groups" class="hover:underline">Gruppen</a>
             <a href="/admin/users" class="hover:underline">Benutzer</a>
             <a href="/admin/analysis/global" class="hover:underline">Auswertung</a>{{end}}
