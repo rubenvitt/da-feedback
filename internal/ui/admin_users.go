@@ -25,11 +25,30 @@ func (h *AdminHandler) listUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	var users []auth.User
+	type userWithGroups struct {
+		auth.User
+		GroupIDs map[int]bool
+	}
+
+	var users []userWithGroups
 	for rows.Next() {
-		var u auth.User
+		var u userWithGroups
 		rows.Scan(&u.ID, &u.Name, &u.Email, &u.Role)
+		u.GroupIDs = make(map[int]bool)
 		users = append(users, u)
+	}
+
+	for i, u := range users {
+		gRows, err := h.sessions.DB().QueryContext(ctx,
+			"SELECT group_id FROM user_groups WHERE user_id = ?", u.ID)
+		if err == nil {
+			for gRows.Next() {
+				var gid int
+				gRows.Scan(&gid)
+				users[i].GroupIDs[gid] = true
+			}
+			gRows.Close()
+		}
 	}
 
 	groups, _ := h.groups.List(ctx)

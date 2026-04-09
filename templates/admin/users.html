@@ -33,10 +33,10 @@
         <form method="POST" action="/admin/users/{{.ID}}/groups" class="space-y-2">
             <p class="text-sm font-medium text-gray-600">Gruppen-Zugang:</p>
             <div class="flex flex-wrap gap-3">
-                {{$userID := .ID}}
+                {{$groups := .GroupIDs}}
                 {{range $.Groups}}
                 <label class="flex items-center gap-1.5 text-sm cursor-pointer">
-                    <input type="checkbox" name="group_ids" value="{{.ID}}">
+                    <input type="checkbox" name="group_ids" value="{{.ID}}" {{if index $groups .ID}}checked{{end}}>
                     <span>{{.Name}}</span>
                 </label>
                 {{end}}
