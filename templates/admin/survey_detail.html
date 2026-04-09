@@ -91,7 +91,7 @@
         </form>
         {{end}}
 
-        {{if gt .ResponseCount 0}}
+        {{if and (gt .ResponseCount 0) (ne (printf "%s" .Survey.Status) "active")}}
         <button type="button" id="copy-prompt-btn" data-survey-id="{{.Survey.ID}}"
             class="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 transition text-sm">
             Auswertung kopieren

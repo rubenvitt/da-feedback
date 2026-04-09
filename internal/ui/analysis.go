@@ -45,14 +45,17 @@ func (h *AnalysisHandler) daAnalysis(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var surveyID int
+	var surveyStatus survey.Status
 	if srv, err := h.surveys.GetByEveningID(ctx, id); err == nil {
 		surveyID = srv.ID
+		surveyStatus = srv.Status
 	}
 
 	h.render.Render(w, "admin/analysis_da.html", http.StatusOK, map[string]any{
-		"User":     auth.GetSession(r).User,
-		"Stats":    stats,
-		"SurveyID": surveyID,
+		"User":         auth.GetSession(r).User,
+		"Stats":        stats,
+		"SurveyID":     surveyID,
+		"SurveyStatus": surveyStatus,
 	})
 }
 
@@ -119,6 +122,11 @@ func (h *AnalysisHandler) surveyPrompt(w http.ResponseWriter, r *http.Request) {
 	srv, err := h.surveys.GetByID(ctx, id)
 	if err != nil {
 		http.NotFound(w, r)
+		return
+	}
+
+	if srv.Status == survey.StatusActive {
+		http.Error(w, "Auswertung ist nicht verfügbar, solange die Umfrage noch läuft", http.StatusForbidden)
 		return
 	}
 

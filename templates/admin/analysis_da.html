@@ -21,7 +21,7 @@
 
 <div class="flex justify-between items-start mb-2">
     <h1 class="text-2xl font-bold">Auswertung Dienstabend</h1>
-    {{if and .SurveyID (gt .Stats.ResponseCount 0)}}
+    {{if and .SurveyID (gt .Stats.ResponseCount 0) (ne (printf "%s" .SurveyStatus) "active")}}
     <button type="button" id="copy-prompt-btn" data-survey-id="{{.SurveyID}}"
         class="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 transition text-sm">
         Auswertung kopieren
