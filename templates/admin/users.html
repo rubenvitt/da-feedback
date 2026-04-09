@@ -22,12 +22,14 @@
         <div class="flex justify-between items-start mb-4">
             <div>
                 <p class="font-bold">{{.Name}}</p>
-                <p class="text-sm text-gray-500">{{.Email}}</p>
                 <span class="text-xs px-2 py-0.5 rounded
                     {{if eq .Role "admin"}}bg-red-100 text-red-700{{else}}bg-gray-100 text-gray-600{{end}}">
                     {{.Role}}
                 </span>
             </div>
+            <form method="POST" action="/admin/users/{{.ID}}/delete" onsubmit="return confirm('Benutzer wirklich löschen?')">
+                <button type="submit" class="text-sm text-red-600 hover:text-red-800">Löschen</button>
+            </form>
         </div>
 
         <form method="POST" action="/admin/users/{{.ID}}/groups" class="space-y-2">

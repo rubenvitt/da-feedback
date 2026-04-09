@@ -12,6 +12,7 @@ func (h *AdminHandler) RegisterUserRoutes(mux *http.ServeMux, authMw func(http.H
 
 	mux.Handle("GET /admin/users", wrap(h.listUsers))
 	mux.Handle("POST /admin/users/{id}/groups", wrap(h.assignGroups))
+	mux.Handle("POST /admin/users/{id}/delete", wrap(h.deleteUser))
 }
 
 func (h *AdminHandler) listUsers(w http.ResponseWriter, r *http.Request) {
@@ -73,6 +74,18 @@ func (h *AdminHandler) assignGroups(w http.ResponseWriter, r *http.Request) {
 		groupID, _ := strconv.Atoi(gid)
 		db.ExecContext(ctx, "INSERT INTO user_groups (user_id, group_id) VALUES (?, ?)", userID, groupID)
 	}
+
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
+func (h *AdminHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
+	userID := r.PathValue("id")
+	ctx := r.Context()
+	db := h.sessions.DB()
+
+	db.ExecContext(ctx, "DELETE FROM user_groups WHERE user_id = ?", userID)
+	db.ExecContext(ctx, "DELETE FROM sessions WHERE user_id = ?", userID)
+	db.ExecContext(ctx, "DELETE FROM users WHERE id = ?", userID)
 
 	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
 }
