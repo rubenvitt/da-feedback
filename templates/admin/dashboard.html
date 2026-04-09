@@ -1,0 +1,26 @@
+{{define "title"}}Dashboard{{end}}
+{{define "nav"}}
+<nav class="bg-red-800 text-white px-4 py-3">
+    <div class="max-w-4xl mx-auto flex justify-between items-center">
+        <a href="/admin" class="font-bold">DRK Feedback</a>
+        <div class="flex gap-4 items-center text-sm">
+            {{if eq .User.Role "admin"}}<a href="/admin/groups" class="hover:underline">Gruppen</a>
+            <a href="/admin/users" class="hover:underline">Benutzer</a>
+            <a href="/admin/analysis/global" class="hover:underline">Auswertung</a>{{end}}
+            <span>{{.User.Name}}</span>
+            <a href="/auth/logout" class="hover:underline">Abmelden</a>
+        </div>
+    </div>
+</nav>
+{{end}}
+{{define "content"}}
+<h1 class="text-2xl font-bold mb-6">Dashboard</h1>
+<div class="grid gap-4 md:grid-cols-2">
+    {{range .Groups}}
+    <a href="/admin/groups/{{.ID}}" class="block p-6 bg-white rounded-lg shadow hover:shadow-md transition border border-gray-200">
+        <h2 class="font-bold text-lg">{{.Name}}</h2>
+        <p class="text-sm text-gray-500">{{.Slug}}</p>
+    </a>
+    {{end}}
+</div>
+{{end}}

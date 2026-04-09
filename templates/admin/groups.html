@@ -1,0 +1,48 @@
+{{define "title"}}Gruppen{{end}}
+{{define "nav"}}
+<nav class="bg-red-800 text-white px-4 py-3">
+    <div class="max-w-4xl mx-auto flex justify-between items-center">
+        <a href="/admin" class="font-bold">DRK Feedback</a>
+        <div class="flex gap-4 items-center text-sm">
+            {{if eq .User.Role "admin"}}<a href="/admin/groups" class="hover:underline">Gruppen</a>
+            <a href="/admin/users" class="hover:underline">Benutzer</a>
+            <a href="/admin/analysis/global" class="hover:underline">Auswertung</a>{{end}}
+            <span>{{.User.Name}}</span>
+            <a href="/auth/logout" class="hover:underline">Abmelden</a>
+        </div>
+    </div>
+</nav>
+{{end}}
+{{define "content"}}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">Gruppen</h1>
+</div>
+
+<div class="bg-white rounded-lg shadow border border-gray-200 p-6 mb-6">
+    <h2 class="font-bold text-lg mb-4">Neue Gruppe erstellen</h2>
+    <form method="POST" action="/admin/groups" class="flex gap-3 flex-wrap">
+        <input type="text" name="name" placeholder="Name" required
+            class="flex-1 min-w-40 rounded border border-gray-300 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
+        <input type="text" name="slug" placeholder="Slug (z.B. gruppe-nord)" required
+            class="flex-1 min-w-40 rounded border border-gray-300 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
+        <button type="submit"
+            class="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 transition">
+            Erstellen
+        </button>
+    </form>
+</div>
+
+<div class="space-y-3">
+    {{range .Groups}}
+    <div class="bg-white rounded-lg shadow border border-gray-200 p-4 flex justify-between items-center">
+        <div>
+            <a href="/admin/groups/{{.ID}}" class="font-bold hover:text-red-700">{{.Name}}</a>
+            <p class="text-sm text-gray-500">{{.Slug}}</p>
+        </div>
+        <a href="/admin/groups/{{.ID}}" class="text-sm text-red-700 hover:underline">Details &rarr;</a>
+    </div>
+    {{else}}
+    <p class="text-gray-500">Noch keine Gruppen vorhanden.</p>
+    {{end}}
+</div>
+{{end}}
