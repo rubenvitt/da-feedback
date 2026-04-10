@@ -1,6 +1,6 @@
 {{define "title"}}Gruppen-Auswertung{{end}}
 {{define "nav"}}
-<nav class="bg-red-800 text-white px-4 py-3">
+<nav class="bg-red-800 dark:bg-gray-950 text-white px-4 py-3">
     <div class="max-w-4xl mx-auto flex flex-wrap justify-between items-center">
         <a href="/admin" class="font-bold">DA-Feedback</a>
         <button type="button" class="md:hidden" onclick="var n=document.getElementById('nav-links');n.classList.toggle('hidden');n.classList.toggle('flex')" aria-label="Menü">
@@ -19,66 +19,66 @@
 {{define "head"}}<script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"></script>{{end}}
 {{define "content"}}
 <div class="mb-4">
-    <a href="/admin/groups/{{.Group.ID}}" class="text-sm text-gray-500 hover:underline">&larr; {{.Group.Name}}</a>
+    <a href="/admin/groups/{{.Group.ID}}" class="text-sm text-gray-500 dark:text-gray-400 hover:underline">&larr; {{.Group.Name}}</a>
 </div>
 
 <div class="flex justify-between items-start mb-6">
     <div>
         <h1 class="text-2xl font-bold">Trend-Auswertung</h1>
-        <p class="text-gray-500">{{.Group.Name}}</p>
+        <p class="text-gray-500 dark:text-gray-400">{{.Group.Name}}</p>
     </div>
-    <a href="/admin/analysis/export/{{.Group.ID}}" class="text-sm bg-gray-100 px-3 py-2 rounded hover:bg-gray-200 transition">
+    <a href="/admin/analysis/export/{{.Group.ID}}" class="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition">
         CSV Export
     </a>
 </div>
 
-<form method="GET" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6 flex gap-3 flex-wrap items-end">
+<form method="GET" class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 mb-6 flex gap-3 flex-wrap items-end">
     <div>
         <label class="block text-sm font-medium mb-1">Von</label>
         <input type="date" name="from" value="{{.From}}"
-            class="rounded-xl border border-gray-200 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
+            class="rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
     </div>
     <div>
         <label class="block text-sm font-medium mb-1">Bis</label>
         <input type="date" name="to" value="{{.To}}"
-            class="rounded-xl border border-gray-200 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
+            class="rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
     </div>
-    <button type="submit" class="bg-red-700 text-white px-4 py-2 rounded-xl hover:bg-red-800 transition">
+    <button type="submit" class="bg-red-700 dark:bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-800 dark:hover:bg-red-500 transition">
         Filtern
     </button>
 </form>
 
 {{if and .Trend .Trend.Points}}
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 mb-6">
     <div id="trend-chart" style="height:400px"></div>
 </div>
 
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
     <table class="w-full text-sm">
-        <thead class="bg-gray-50 border-b border-gray-200">
+        <thead class="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
             <tr>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Datum</th>
-                <th class="px-4 py-3 text-right font-medium text-gray-600">Ø Schulnote</th>
-                <th class="px-4 py-3 text-right font-medium text-gray-600">Antworten</th>
+                <th class="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Datum</th>
+                <th class="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">Ø Schulnote</th>
+                <th class="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">Antworten</th>
             </tr>
         </thead>
-        <tbody class="divide-y divide-gray-100">
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
             {{range .Trend.Points}}
-            <tr class="hover:bg-gray-50">
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
                 <td class="px-4 py-3">{{.Date.Format "02.01.2006"}}</td>
                 <td class="px-4 py-3 text-right">
                     <span class="font-bold {{if le .AvgOverall 2.0}}text-green-600{{else if le .AvgOverall 3.5}}text-yellow-600{{else}}text-red-600{{end}}">
                         {{printf "%.1f" .AvgOverall}}
                     </span>
                 </td>
-                <td class="px-4 py-3 text-right text-gray-500">{{.Responses}}</td>
+                <td class="px-4 py-3 text-right text-gray-500 dark:text-gray-400">{{.Responses}}</td>
             </tr>
             {{end}}
         </tbody>
     </table>
 </div>
 {{else}}
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center text-gray-500">
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 text-center text-gray-500 dark:text-gray-400">
     Keine Daten für den gewählten Zeitraum.
 </div>
 {{end}}
@@ -86,41 +86,56 @@
 {{define "scripts"}}
 {{if and .Trend .Trend.Points}}
 <script>
+var c = getChartColors();
 var chart = echarts.init(document.getElementById('trend-chart'));
 var data = {{toJSON .Trend.Points}};
-chart.setOption({
-    tooltip: {
-        trigger: 'axis',
-        formatter: function(params) {
-            var p = params[0];
-            return p.axisValue + '<br>Ø ' + p.value.toFixed(1) + ' (Schulnote)';
-        }
-    },
-    xAxis: {
-        type: 'category',
-        data: data.map(function(p) { return p.date.substring(0, 10); })
-    },
-    yAxis: {
-        type: 'value',
-        min: 1,
-        max: 6,
-        inverse: true,
-        axisLabel: {
-            formatter: function(v) { return v.toFixed(0); }
-        }
-    },
-    series: [{
-        name: 'Ø Schulnote',
-        type: 'line',
-        data: data.map(function(p) { return p.avgOverall; }),
-        smooth: true,
-        areaStyle: {color: 'rgba(185, 28, 28, 0.08)'},
-        lineStyle: {color: '#b91c1c', width: 3},
-        itemStyle: {color: '#b91c1c'},
-        label: {show: true, position: 'top', formatter: '{c}', fontSize: 11}
-    }]
-});
+
+function renderTrend() {
+    c = getChartColors();
+    chart.setOption({
+        tooltip: {
+            trigger: 'axis',
+            backgroundColor: c.tooltipBg,
+            borderColor: c.tooltipBorder,
+            textStyle: { color: c.tooltipText },
+            formatter: function(params) {
+                var p = params[0];
+                return p.axisValue + '<br>Ø ' + p.value.toFixed(1) + ' (Schulnote)';
+            }
+        },
+        xAxis: {
+            type: 'category',
+            data: data.map(function(p) { return p.date.substring(0, 10); }),
+            axisLine: { lineStyle: { color: c.axisLineColor } },
+            axisLabel: { color: c.textColor }
+        },
+        yAxis: {
+            type: 'value',
+            min: 1,
+            max: 6,
+            inverse: true,
+            axisLabel: {
+                formatter: function(v) { return v.toFixed(0); },
+                color: c.textColor
+            },
+            axisLine: { lineStyle: { color: c.axisLineColor } },
+            splitLine: { lineStyle: { color: c.splitLineColor } }
+        },
+        series: [{
+            name: 'Ø Schulnote',
+            type: 'line',
+            data: data.map(function(p) { return p.avgOverall; }),
+            smooth: true,
+            areaStyle: {color: c.areaColor},
+            lineStyle: {color: c.lineColor, width: 3},
+            itemStyle: {color: c.lineColor},
+            label: {show: true, position: 'top', formatter: '{c}', fontSize: 11, color: c.textColor}
+        }]
+    });
+}
+renderTrend();
 window.addEventListener('resize', function() { chart.resize(); });
+window.updateChartTheme = renderTrend;
 </script>
 {{end}}
 {{end}}

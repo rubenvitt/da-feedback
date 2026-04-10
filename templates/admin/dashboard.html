@@ -1,6 +1,6 @@
 {{define "title"}}Dashboard{{end}}
 {{define "nav"}}
-<nav class="bg-red-800 text-white px-4 py-3">
+<nav class="bg-red-800 dark:bg-gray-950 text-white px-4 py-3">
     <div class="max-w-4xl mx-auto flex flex-wrap justify-between items-center">
         <a href="/admin" class="font-bold">DA-Feedback</a>
         <button type="button" class="md:hidden" onclick="var n=document.getElementById('nav-links');n.classList.toggle('hidden');n.classList.toggle('flex')" aria-label="Menü">
@@ -20,9 +20,9 @@
 <h1 class="text-2xl font-bold mb-6">Dashboard</h1>
 <div class="grid gap-4 md:grid-cols-2">
     {{range .Groups}}
-    <a href="/admin/groups/{{.ID}}" class="block p-6 bg-white rounded-lg shadow hover:shadow-md transition border border-gray-200">
+    <a href="/admin/groups/{{.ID}}" class="block p-6 bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition border border-gray-200 dark:border-gray-700">
         <h2 class="font-bold text-lg">{{.Name}}</h2>
-        <p class="text-sm text-gray-500">{{.Slug}}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{.Slug}}</p>
     </a>
     {{end}}
 </div>

@@ -2,14 +2,14 @@
 {{define "content"}}
 <div class="max-w-2xl mx-auto">
     <div class="text-center mb-8">
-        <h1 class="text-2xl font-bold text-red-700">Wie war's?</h1>
-        {{if .Evening.Topic}}<p class="text-gray-500 mt-1">{{deref .Evening.Topic}} — {{.Evening.Date.Format "02.01.2006"}}</p>{{end}}
-        <p class="text-sm text-gray-400 mt-3 leading-relaxed">Nimm dir kurz Zeit und gib uns dein ehrliches Feedback.<br>Das hilft uns, die nächsten Dienstabende noch besser zu machen.</p>
+        <h1 class="text-2xl font-bold text-red-700 dark:text-red-400">Wie war's?</h1>
+        {{if .Evening.Topic}}<p class="text-gray-500 dark:text-gray-400 mt-1">{{deref .Evening.Topic}} — {{.Evening.Date.Format "02.01.2006"}}</p>{{end}}
+        <p class="text-sm text-gray-400 dark:text-gray-500 mt-3 leading-relaxed">Nimm dir kurz Zeit und gib uns dein ehrliches Feedback.<br>Das hilft uns, die nächsten Dienstabende noch besser zu machen.</p>
     </div>
 
     {{if .AlreadySubmitted}}
-    <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6">
-        <p class="text-amber-800 text-sm">Sieht aus, als hättest du schon Feedback gegeben — kein Problem, du kannst gerne nochmal absenden.</p>
+    <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-2xl p-4 mb-6">
+        <p class="text-amber-800 dark:text-amber-300 text-sm">Sieht aus, als hättest du schon Feedback gegeben — kein Problem, du kannst gerne nochmal absenden.</p>
     </div>
     {{end}}
 
@@ -114,7 +114,7 @@
         {{end}}
 
         <button type="submit" class="submit-btn">Abschicken</button>
-        <p style="text-align:center;font-size:0.7rem;color:#cbd5e1;margin-top:1rem">Alles bleibt anonym — versprochen.</p>
+        <p style="text-align:center;font-size:0.7rem;margin-top:1rem" class="text-gray-300 dark:text-gray-600">Alles bleibt anonym — versprochen.</p>
     </form>
 </div>
 {{end}}
@@ -123,16 +123,16 @@
 <style>
 /* ── Survey Card ── */
 .survey-card {
-    background: #fff;
+    background: var(--survey-card-bg);
     border-radius: 1rem;
-    border: 1px solid #f3f4f6;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    border: 1px solid var(--survey-card-border);
+    box-shadow: 0 1px 2px var(--survey-card-shadow);
     overflow: hidden;
 }
 .survey-card-header { padding: 1.25rem 1.25rem 0.75rem; }
 .survey-card-body { padding: 0 1.25rem 1.25rem; }
-.survey-section-title { font-size: 1.1rem; font-weight: 600; color: #1f2937; }
-.survey-section-sub { font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem; }
+.survey-section-title { font-size: 1.1rem; font-weight: 600; color: var(--survey-section-title); }
+.survey-section-sub { font-size: 0.75rem; color: var(--survey-section-sub); margin-top: 0.25rem; }
 
 /* ── Matrix Layout ── */
 .matrix { padding: 0 0.5rem 1rem; }
@@ -141,24 +141,24 @@
     display: flex;
     align-items: center;
     padding: 0.6rem 0.5rem;
-    border-bottom: 1px solid #f9fafb;
+    border-bottom: 1px solid var(--survey-row-border);
     transition: background 0.15s;
 }
-.matrix-row:hover { background: rgba(249,250,251,0.6); }
+.matrix-row:hover { background: var(--survey-row-hover); }
 
 .matrix-header {
     display: flex;
     align-items: center;
     padding: 0.6rem 0.5rem;
-    border-bottom: 1px solid #f3f4f6;
-    border-top: 1px solid #f3f4f6;
+    border-bottom: 1px solid var(--survey-header-border);
+    border-top: 1px solid var(--survey-header-border);
 }
 .matrix-header .matrix-grades span { font-weight: 600; font-size: 0.85rem; }
 
 .matrix-label {
     flex: 1;
     font-size: 0.875rem;
-    color: #374151;
+    color: var(--survey-label-color);
     padding-right: 0.75rem;
     line-height: 1.4;
 }
@@ -179,8 +179,8 @@
     width: 2.4rem;
     height: 2.4rem;
     border-radius: 50%;
-    border: 2px solid #e5e7eb;
-    background: #fff;
+    border: 2px solid var(--survey-btn-border);
+    background: var(--survey-btn-bg);
     color: transparent;
     font-size: 0;
     cursor: pointer;
@@ -201,7 +201,7 @@
 }
 
 /* Ausgewählt: Punkt füllt sich farbig */
-.matrix-btn.selected { box-shadow: 0 0 0 2px rgba(0,0,0,0.06); }
+.matrix-btn.selected { box-shadow: 0 0 0 2px var(--survey-btn-selected-shadow); }
 .matrix-btn.selected::after { background: var(--dot-color); }
 .matrix-btn.selected { border-color: var(--dot-color); }
 
@@ -211,7 +211,7 @@
     align-items: center;
     padding: 0.4rem 0.5rem 0;
     font-size: 0.65rem;
-    color: #9ca3af;
+    color: var(--survey-footer-color);
 }
 .matrix-footer .matrix-grades {
     display: flex;
@@ -227,7 +227,7 @@
     40%, 80% { transform: translateX(5px); }
 }
 .shake { animation: shake 0.35s ease-in-out; }
-.matrix-row.unanswered .matrix-label { color: #dc2626; }
+.matrix-row.unanswered .matrix-label { color: var(--survey-unanswered); }
 
 /* ── Mobile: unter 600px ── */
 @media (max-width: 599px) {
@@ -254,7 +254,7 @@
         border-radius: 0.75rem;
         font-size: 0.8rem;
         font-weight: 600;
-        color: #9ca3af;
+        color: var(--survey-btn-mobile-color);
     }
     .matrix-btn.selected {
         color: var(--dot-color);
@@ -270,14 +270,15 @@
     display: block;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #374151;
+    color: var(--survey-label-color);
     margin-bottom: 0.4rem;
 }
 .text-question-input {
     width: 100%;
     border-radius: 0.75rem;
-    border: 1px solid #e5e7eb;
-    background: #f9fafb;
+    border: 1px solid var(--survey-input-border);
+    background: var(--survey-input-bg);
+    color: var(--survey-input-color);
     padding: 0.75rem 1rem;
     font-size: 0.875rem;
     transition: all 0.2s;
@@ -287,18 +288,18 @@
 }
 .text-question-input:focus {
     outline: none;
-    border-color: #f87171;
-    box-shadow: 0 0 0 3px rgba(248,113,113,0.1);
-    background: #fff;
+    border-color: var(--survey-input-focus-border);
+    box-shadow: 0 0 0 3px var(--survey-input-focus-shadow);
+    background: var(--survey-input-focus-bg);
 }
-.text-question-input::placeholder { color: #d1d5db; }
+.text-question-input::placeholder { color: var(--survey-input-placeholder); }
 
 /* ── Submit ── */
 .submit-btn {
     display: block;
     width: 100%;
     padding: 1rem;
-    background: #b91c1c;
+    background: var(--survey-submit-bg);
     color: #fff;
     border: none;
     border-radius: 1rem;
@@ -308,19 +309,20 @@
     transition: all 0.2s;
     font-family: inherit;
 }
-.submit-btn:hover { background: #991b1b; }
+.submit-btn:hover { background: var(--survey-submit-hover); }
 .submit-btn:active { transform: scale(0.98); }
 </style>
 
 <script>
 (function() {
+    var isDark = document.documentElement.classList.contains('dark');
     var colors = {
-        1: { dot: '#16a34a', bg: '#dcfce7' },
-        2: { dot: '#65a30d', bg: '#ecfccb' },
-        3: { dot: '#ca8a04', bg: '#fef9c3' },
-        4: { dot: '#ea580c', bg: '#ffedd5' },
-        5: { dot: '#dc2626', bg: '#fee2e2' },
-        6: { dot: '#991b1b', bg: '#fecaca' }
+        1: { dot: '#16a34a', bg: isDark ? '#166534' : '#dcfce7' },
+        2: { dot: '#65a30d', bg: isDark ? '#3f6212' : '#ecfccb' },
+        3: { dot: '#ca8a04', bg: isDark ? '#854d0e' : '#fef9c3' },
+        4: { dot: '#ea580c', bg: isDark ? '#9a3412' : '#ffedd5' },
+        5: { dot: '#dc2626', bg: isDark ? '#991b1b' : '#fee2e2' },
+        6: { dot: '#991b1b', bg: isDark ? '#7f1d1d' : '#fecaca' }
     };
 
     document.querySelectorAll('.matrix-row').forEach(function(row) {
@@ -360,7 +362,7 @@
         var input = rating.querySelector('input[type=hidden]');
         function highlight(n) {
             stars.forEach(function(s) {
-                s.style.color = parseInt(s.dataset.value) <= n ? '#facc15' : '#d1d5db';
+                s.style.color = parseInt(s.dataset.value) <= n ? '#facc15' : (document.documentElement.classList.contains('dark') ? '#4b5563' : '#d1d5db');
             });
         }
         stars.forEach(function(star) {

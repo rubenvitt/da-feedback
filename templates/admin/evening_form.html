@@ -1,6 +1,6 @@
 {{define "title"}}Dienstabend bearbeiten{{end}}
 {{define "nav"}}
-<nav class="bg-red-800 text-white px-4 py-3">
+<nav class="bg-red-800 dark:bg-gray-950 text-white px-4 py-3">
     <div class="max-w-4xl mx-auto flex flex-wrap justify-between items-center">
         <a href="/admin" class="font-bold">DA-Feedback</a>
         <button type="button" class="md:hidden" onclick="var n=document.getElementById('nav-links');n.classList.toggle('hidden');n.classList.toggle('flex')" aria-label="Menü">
@@ -18,35 +18,35 @@
 {{end}}
 {{define "content"}}
 <div class="mb-4">
-    <a href="/admin/groups/{{.Evening.GroupID}}" class="text-sm text-gray-500 hover:underline">&larr; Zurück zur Gruppe</a>
+    <a href="/admin/groups/{{.Evening.GroupID}}" class="text-sm text-gray-500 dark:text-gray-400 hover:underline">&larr; Zurück zur Gruppe</a>
 </div>
 
 <h1 class="text-2xl font-bold mb-6">Dienstabend bearbeiten</h1>
 
-<div class="bg-white rounded-lg shadow border border-gray-200 p-6 max-w-lg">
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 max-w-lg">
     <form method="POST" action="/admin/da/{{.Evening.ID}}" class="space-y-4">
         <div>
             <label class="block text-sm font-medium mb-1">Datum</label>
-            <p class="text-gray-700">{{.Evening.Date.Format "02.01.2006"}}</p>
+            <p class="text-gray-700 dark:text-gray-300">{{.Evening.Date.Format "02.01.2006"}}</p>
         </div>
         <div>
             <label class="block text-sm font-medium mb-1">Thema</label>
             <input type="text" name="topic" value="{{deref .Evening.Topic}}"
-                class="w-full rounded border border-gray-300 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                class="w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500"
                 placeholder="Thema des Abends">
         </div>
         <div>
             <label class="block text-sm font-medium mb-1">Teilnehmeranzahl</label>
             <input type="number" name="participant_count" value="{{derefInt .Evening.ParticipantCount}}" min="0"
-                class="w-full rounded border border-gray-300 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
+                class="w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
         </div>
         <div>
             <label class="block text-sm font-medium mb-1">Notizen</label>
             <textarea name="notes" rows="4"
-                class="w-full rounded border border-gray-300 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                class="w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500"
                 placeholder="Interne Notizen...">{{deref .Evening.Notes}}</textarea>
         </div>
-        <button type="submit" class="w-full bg-red-700 text-white py-2 rounded hover:bg-red-800 transition">
+        <button type="submit" class="w-full bg-red-700 dark:bg-red-600 text-white py-2 rounded hover:bg-red-800 dark:hover:bg-red-500 transition">
             Speichern
         </button>
     </form>

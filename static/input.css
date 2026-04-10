@@ -1,3 +1,64 @@
 @import "tailwindcss";
 
 @source "../templates";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Survey Dark Mode Variables ── */
+:root {
+    --survey-card-bg: #fff;
+    --survey-card-border: #f3f4f6;
+    --survey-card-shadow: rgba(0,0,0,0.04);
+    --survey-section-title: #1f2937;
+    --survey-section-sub: #9ca3af;
+    --survey-label-color: #374151;
+    --survey-row-border: #f9fafb;
+    --survey-row-hover: rgba(249,250,251,0.6);
+    --survey-header-border: #f3f4f6;
+    --survey-btn-border: #e5e7eb;
+    --survey-btn-bg: #fff;
+    --survey-btn-selected-shadow: rgba(0,0,0,0.06);
+    --survey-btn-mobile-color: #9ca3af;
+    --survey-footer-color: #9ca3af;
+    --survey-input-bg: #f9fafb;
+    --survey-input-border: #e5e7eb;
+    --survey-input-focus-border: #f87171;
+    --survey-input-focus-shadow: rgba(248,113,113,0.1);
+    --survey-input-focus-bg: #fff;
+    --survey-input-placeholder: #d1d5db;
+    --survey-input-color: inherit;
+    --survey-submit-bg: #b91c1c;
+    --survey-submit-hover: #991b1b;
+    --survey-unanswered: #dc2626;
+    --survey-legend-color: #cbd5e1;
+    --survey-star-inactive: #d1d5db;
+}
+
+.dark {
+    --survey-card-bg: #1f2937;
+    --survey-card-border: #374151;
+    --survey-card-shadow: rgba(0,0,0,0.2);
+    --survey-section-title: #f3f4f6;
+    --survey-section-sub: #6b7280;
+    --survey-label-color: #d1d5db;
+    --survey-row-border: #374151;
+    --survey-row-hover: rgba(55,65,81,0.5);
+    --survey-header-border: #374151;
+    --survey-btn-border: #4b5563;
+    --survey-btn-bg: #1f2937;
+    --survey-btn-selected-shadow: rgba(0,0,0,0.2);
+    --survey-btn-mobile-color: #6b7280;
+    --survey-footer-color: #6b7280;
+    --survey-input-bg: #374151;
+    --survey-input-border: #4b5563;
+    --survey-input-focus-border: #f87171;
+    --survey-input-focus-shadow: rgba(248,113,113,0.15);
+    --survey-input-focus-bg: #1f2937;
+    --survey-input-placeholder: #6b7280;
+    --survey-input-color: #f3f4f6;
+    --survey-submit-bg: #dc2626;
+    --survey-submit-hover: #b91c1c;
+    --survey-unanswered: #f87171;
+    --survey-legend-color: #4b5563;
+    --survey-star-inactive: #4b5563;
+}
