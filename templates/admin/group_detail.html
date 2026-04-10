@@ -1,6 +1,6 @@
 {{define "title"}}{{.Group.Name}}{{end}}
 {{define "nav"}}
-<nav class="bg-red-800 text-white px-4 py-3">
+<nav class="bg-red-800 dark:bg-gray-950 text-white px-4 py-3">
     <div class="max-w-4xl mx-auto flex flex-wrap justify-between items-center">
         <a href="/admin" class="font-bold">DA-Feedback</a>
         <button type="button" class="md:hidden" onclick="var n=document.getElementById('nav-links');n.classList.toggle('hidden');n.classList.toggle('flex')" aria-label="Menü">
@@ -18,70 +18,70 @@
 {{end}}
 {{define "content"}}
 <div class="mb-4">
-    <a href="/admin/groups" class="text-sm text-gray-500 hover:underline">&larr; Alle Gruppen</a>
+    <a href="/admin/groups" class="text-sm text-gray-500 dark:text-gray-400 hover:underline">&larr; Alle Gruppen</a>
 </div>
 
 <div class="flex justify-between items-start mb-6">
     <div>
         <h1 class="text-2xl font-bold">{{.Group.Name}}</h1>
-        <p class="text-gray-500">{{.Group.Slug}}</p>
+        <p class="text-gray-500 dark:text-gray-400">{{.Group.Slug}}</p>
     </div>
     <div class="flex gap-2">
-        <a href="/admin/analysis/group/{{.Group.ID}}" class="text-sm bg-gray-100 px-3 py-2 rounded hover:bg-gray-200 transition">Auswertung</a>
-        <a href="/admin/analysis/export/{{.Group.ID}}" class="text-sm bg-gray-100 px-3 py-2 rounded hover:bg-gray-200 transition">CSV Export</a>
+        <a href="/admin/analysis/group/{{.Group.ID}}" class="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition">Auswertung</a>
+        <a href="/admin/analysis/export/{{.Group.ID}}" class="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition">CSV Export</a>
     </div>
 </div>
 
 <div class="grid md:grid-cols-2 gap-6 mb-6">
-    <div class="bg-white rounded-lg shadow border border-gray-200 p-5">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-5">
         <h2 class="font-bold mb-4">Gruppe bearbeiten</h2>
         <form method="POST" action="/admin/groups/{{.Group.ID}}" class="space-y-3">
             <div>
                 <label class="block text-sm font-medium mb-1">Name</label>
                 <input type="text" name="name" value="{{.Group.Name}}" required
-                    class="w-full rounded border border-gray-300 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
+                    class="w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1">Umfrage schließen nach (Stunden)</label>
                 <input type="number" name="close_after_hours" value="{{derefInt .Group.CloseAfterHours}}"
-                    class="w-full rounded border border-gray-300 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
+                    class="w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
             </div>
-            <button type="submit" class="w-full bg-red-700 text-white py-2 rounded hover:bg-red-800 transition">
+            <button type="submit" class="w-full bg-red-700 dark:bg-red-600 text-white py-2 rounded hover:bg-red-800 dark:hover:bg-red-500 transition">
                 Speichern
             </button>
         </form>
     </div>
 
-    <div class="bg-white rounded-lg shadow border border-gray-200 p-5">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-5">
         <h2 class="font-bold mb-4">QR-Code & Link</h2>
-        <p class="text-sm text-gray-600 mb-3 break-all cursor-pointer hover:text-red-700 transition" id="feedback-url"
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 break-all cursor-pointer hover:text-red-700 dark:hover:text-red-400 transition" id="feedback-url"
             onclick="var t=this,o=t.textContent;navigator.clipboard.writeText(o).then(function(){t.textContent='Kopiert!';setTimeout(function(){t.textContent=o},2000)})"
             title="Klicken zum Kopieren">{{.FeedbackURL}}</p>
         <div class="flex gap-2 flex-wrap">
             <a href="/admin/groups/{{.Group.ID}}/qr.png" download
-                class="text-sm bg-red-700 text-white px-3 py-2 rounded hover:bg-red-800 transition">
+                class="text-sm bg-red-700 dark:bg-red-600 text-white px-3 py-2 rounded hover:bg-red-800 dark:hover:bg-red-500 transition">
                 QR-Code herunterladen
             </a>
             <form method="POST" action="/admin/groups/{{.Group.ID}}/regenerate-secret" class="inline">
                 <button type="submit"
                     onclick="return confirm('Secret neu generieren? Bestehende QR-Codes werden ungültig!')"
-                    class="text-sm bg-gray-100 px-3 py-2 rounded hover:bg-gray-200 transition">
+                    class="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition">
                     Secret neu generieren
                 </button>
             </form>
         </div>
-        <p class="text-xs text-gray-400 mt-2">Secret: {{.Group.Secret}}</p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">Secret: {{.Group.Secret}}</p>
     </div>
 </div>
 
-<div class="bg-white rounded-lg shadow border border-gray-200 p-5 mb-6">
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-5 mb-6">
     <h2 class="font-bold mb-4">Neuen Dienstabend anlegen</h2>
     <form method="POST" action="/admin/groups/{{.Group.ID}}/da" class="flex gap-3 flex-wrap">
         <input type="date" name="date" required
-            class="rounded border border-gray-300 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
+            class="rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
         <input type="text" name="topic" placeholder="Thema (optional)"
-            class="flex-1 min-w-40 rounded border border-gray-300 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
-        <button type="submit" class="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 transition">
+            class="flex-1 min-w-40 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
+        <button type="submit" class="bg-red-700 dark:bg-red-600 text-white px-4 py-2 rounded hover:bg-red-800 dark:hover:bg-red-500 transition">
             Erstellen
         </button>
     </form>
@@ -91,32 +91,32 @@
 <div class="space-y-2">
     {{range .Items}}
     {{if .Survey}}
-    <a href="/admin/surveys/{{.Survey.ID}}" class="block bg-white rounded-lg border border-gray-200 p-4 hover:border-red-300 hover:shadow-md transition-all group">
+    <a href="/admin/surveys/{{.Survey.ID}}" class="block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-red-300 dark:hover:border-red-700 hover:shadow-md transition-all group">
         <div class="flex justify-between items-center">
             <div class="flex items-center gap-3 min-w-0">
                 <span class="text-xs font-medium px-2 py-0.5 rounded-full shrink-0
-                    {{if eq (printf "%s" .Survey.Status) "active"}}bg-green-100 text-green-700
-                    {{else if eq (printf "%s" .Survey.Status) "draft"}}bg-yellow-100 text-yellow-700
-                    {{else if eq (printf "%s" .Survey.Status) "closed"}}bg-gray-100 text-gray-600
-                    {{else}}bg-purple-100 text-purple-700{{end}}">
+                    {{if eq (printf "%s" .Survey.Status) "active"}}bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300
+                    {{else if eq (printf "%s" .Survey.Status) "draft"}}bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300
+                    {{else if eq (printf "%s" .Survey.Status) "closed"}}bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300
+                    {{else}}bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300{{end}}">
                     {{.Survey.Status}}
                 </span>
                 <div class="min-w-0">
-                    <p class="font-medium text-gray-900 group-hover:text-red-700 transition-colors">{{.Evening.Date.Format "02.01.2006"}}{{if .Evening.Topic}} — {{deref .Evening.Topic}}{{end}}</p>
-                    <p class="text-xs text-gray-400">{{if .Evening.ParticipantCount}}{{derefInt .Evening.ParticipantCount}} Teilnehmer · {{end}}{{.ResponseCount}} Antworten</p>
+                    <p class="font-medium text-gray-900 dark:text-gray-100 group-hover:text-red-700 dark:group-hover:text-red-400 transition-colors">{{.Evening.Date.Format "02.01.2006"}}{{if .Evening.Topic}} — {{deref .Evening.Topic}}{{end}}</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500">{{if .Evening.ParticipantCount}}{{derefInt .Evening.ParticipantCount}} Teilnehmer · {{end}}{{.ResponseCount}} Antworten</p>
                 </div>
             </div>
-            <svg class="w-5 h-5 text-gray-300 group-hover:text-red-400 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <svg class="w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-red-400 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
         </div>
     </a>
     {{else}}
-    <div class="bg-white rounded-lg border border-gray-200 p-4 flex justify-between items-center">
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex justify-between items-center">
         <div>
-            <p class="font-medium text-gray-900">{{.Evening.Date.Format "02.01.2006"}}{{if .Evening.Topic}} — {{deref .Evening.Topic}}{{end}}</p>
-            {{if .Evening.ParticipantCount}}<p class="text-xs text-gray-400">{{derefInt .Evening.ParticipantCount}} Teilnehmer</p>{{end}}
+            <p class="font-medium text-gray-900 dark:text-gray-100">{{.Evening.Date.Format "02.01.2006"}}{{if .Evening.Topic}} — {{deref .Evening.Topic}}{{end}}</p>
+            {{if .Evening.ParticipantCount}}<p class="text-xs text-gray-400 dark:text-gray-500">{{derefInt .Evening.ParticipantCount}} Teilnehmer</p>{{end}}
         </div>
         <form method="POST" action="/admin/da/{{.Evening.ID}}/survey" class="inline">
-            <button type="submit" class="text-sm bg-red-700 text-white px-3 py-1.5 rounded hover:bg-red-800 transition">
+            <button type="submit" class="text-sm bg-red-700 dark:bg-red-600 text-white px-3 py-1.5 rounded hover:bg-red-800 dark:hover:bg-red-500 transition">
                 Umfrage erstellen
             </button>
         </form>
@@ -124,15 +124,15 @@
     {{end}}
     {{end}}
     {{if not .Items}}
-    <p class="text-gray-500">Noch keine Dienstabende.</p>
+    <p class="text-gray-500 dark:text-gray-400">Noch keine Dienstabende.</p>
     {{end}}
 </div>
 
 {{if eq .User.Role "admin"}}
-<div class="mt-8 pt-6 border-t border-gray-200">
+<div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
     <form method="POST" action="/admin/groups/{{.Group.ID}}/delete"
         onsubmit="return confirm('Gruppe wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')">
-        <button type="submit" class="text-sm text-red-600 hover:underline">Gruppe löschen</button>
+        <button type="submit" class="text-sm text-red-600 dark:text-red-400 hover:underline">Gruppe löschen</button>
     </form>
 </div>
 {{end}}
