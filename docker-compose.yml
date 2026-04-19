@@ -12,6 +12,11 @@ services:
       - DAF_OIDC_ISSUER=https://id.example.com
       - DAF_OIDC_CLIENT_ID=da-feedback
       - DAF_OIDC_CLIENT_SECRET=${DAF_OIDC_CLIENT_SECRET}
+      - DAF_SENTRY_DSN=${DAF_SENTRY_DSN:-}
+      - DAF_SENTRY_ENVIRONMENT=${DAF_SENTRY_ENVIRONMENT:-production}
+      - DAF_SENTRY_TRACES_SAMPLE_RATE=${DAF_SENTRY_TRACES_SAMPLE_RATE:-1.0}
+      - DAF_SENTRY_RELEASE=${DAF_SENTRY_RELEASE:-}
+      - DAF_SENTRY_FRONTEND_LOADER_URL=${DAF_SENTRY_FRONTEND_LOADER_URL:-}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.da-feedback.rule=Host(`feedback.example.com`)"

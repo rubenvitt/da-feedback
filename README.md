@@ -38,6 +38,11 @@ Der Server läuft auf `http://localhost:8080`. Im Dev-Modus wird unter `/auth/lo
 | `DAF_OIDC_ISSUER` | — | OIDC Issuer URL |
 | `DAF_OIDC_CLIENT_ID` | — | OIDC Client ID |
 | `DAF_OIDC_CLIENT_SECRET` | — | OIDC Client Secret |
+| `DAF_SENTRY_DSN` | — | Sentry DSN (wenn leer, ist Sentry deaktiviert) |
+| `DAF_SENTRY_ENVIRONMENT` | `production` | Sentry-Environment-Tag |
+| `DAF_SENTRY_TRACES_SAMPLE_RATE` | `1.0` | Anteil der Requests für Performance-Tracing |
+| `DAF_SENTRY_RELEASE` | — | Release-Identifier für Sentry (z. B. Git-SHA) |
+| `DAF_SENTRY_FRONTEND_LOADER_URL` | — | URL zum Sentry Browser-Loader-Script (leer = kein Frontend-Monitoring) |
 
 ## Migrationen
 

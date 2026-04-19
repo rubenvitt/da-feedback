@@ -13,6 +13,20 @@
     </script>
     <title>{{template "title" .}} — DA-Feedback</title>
     <link rel="stylesheet" href="/static/style.css">
+    {{with sentryLoader}}
+    <script src="{{.}}" crossorigin="anonymous"></script>
+    <script>
+      if (window.Sentry && typeof Sentry.onLoad === "function") {
+        Sentry.onLoad(function () {
+          Sentry.init({
+            tracesSampleRate: 1.0,
+            replaysSessionSampleRate: 0.1,
+            replaysOnErrorSampleRate: 1.0,
+          });
+        });
+      }
+    </script>
+    {{end}}
     {{block "head" .}}{{end}}
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">

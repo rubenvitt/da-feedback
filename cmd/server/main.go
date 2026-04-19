@@ -5,8 +5,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
+	"github.com/getsentry/sentry-go"
+	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/rubeen/da-feedback/internal/analysis"
 	"github.com/rubeen/da-feedback/internal/auth"
 	"github.com/rubeen/da-feedback/internal/database"
@@ -20,6 +23,20 @@ func main() {
 	dev := flag.Bool("dev", false, "enable development mode")
 	migrateOnly := flag.Bool("migrate", false, "run migrations and exit")
 	flag.Parse()
+
+	if dsn := os.Getenv("DAF_SENTRY_DSN"); dsn != "" {
+		if err := sentry.Init(sentry.ClientOptions{
+			Dsn:              dsn,
+			EnableLogs:       true,
+			TracesSampleRate: envFloat("DAF_SENTRY_TRACES_SAMPLE_RATE", 1.0),
+			Environment:      envOr("DAF_SENTRY_ENVIRONMENT", "production"),
+			Release:          os.Getenv("DAF_SENTRY_RELEASE"),
+		}); err != nil {
+			log.Fatalf("sentry.Init: %s", err)
+		}
+		defer sentry.Flush(2 * time.Second)
+		log.Printf("sentry enabled")
+	}
 
 	dbPath := envOr("DAF_DB_PATH", "feedback.db")
 
@@ -67,6 +84,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("renderer: %v", err)
 	}
+	if loader := os.Getenv("DAF_SENTRY_FRONTEND_LOADER_URL"); loader != "" {
+		renderer.SetSentryLoader(loader)
+	}
 
 	// Router
 	baseURL := envOr("DAF_BASE_URL", "http://localhost:8080")
@@ -92,8 +112,13 @@ func main() {
 		log.Printf("dev mode enabled")
 	}
 
+	var handler http.Handler = mux
+	if sentry.CurrentHub().Client() != nil {
+		handler = sentryhttp.New(sentryhttp.Options{Repanic: true}).Handle(mux)
+	}
+
 	log.Printf("listening on %s", addr)
-	if err := http.ListenAndServe(addr, mux); err != nil {
+	if err := http.ListenAndServe(addr, handler); err != nil {
 		log.Fatalf("server: %v", err)
 	}
 }
@@ -103,4 +128,16 @@ func envOr(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func envFloat(key string, fallback float64) float64 {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return fallback
+	}
+	return f
 }

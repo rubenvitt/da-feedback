@@ -9,13 +9,15 @@ import (
 )
 
 type Renderer struct {
-	templates map[string]*template.Template
+	templates    map[string]*template.Template
+	sentryLoader string
 }
 
 func NewRenderer(templateFS fs.FS) (*Renderer, error) {
 	r := &Renderer{templates: make(map[string]*template.Template)}
 
 	funcs := template.FuncMap{
+		"sentryLoader": func() string { return r.sentryLoader },
 		"seq": func(n int) []int {
 			s := make([]int, n)
 			for i := range s {
@@ -71,6 +73,10 @@ func NewRenderer(templateFS fs.FS) (*Renderer, error) {
 	}
 
 	return r, nil
+}
+
+func (rn *Renderer) SetSentryLoader(url string) {
+	rn.sentryLoader = url
 }
 
 func (rn *Renderer) Render(w http.ResponseWriter, name string, status int, data any) {
