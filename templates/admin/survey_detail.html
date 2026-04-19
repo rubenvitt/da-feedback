@@ -256,7 +256,7 @@ var c = getChartColors();
 var chart = echarts.init(document.getElementById('radar-chart'));
 var ratings = [
     {{range .Stats.Ratings}}
-    {name: {{.QuestionText}}, value: {{printf "%.2f" .Avg}}},
+    {name: {{.QuestionText}}, value: {{.Avg}}},
     {{end}}
 ];
 
