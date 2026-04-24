@@ -90,12 +90,31 @@ func (s *Store) Update(ctx context.Context, e *Evening) error {
 }
 
 func (s *Store) Delete(ctx context.Context, id int) error {
-	res, err := s.db.ExecContext(ctx, "DELETE FROM evenings WHERE id = ?", id)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin delete evening: %w", err)
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx,
+		`DELETE FROM responses
+		 WHERE survey_id IN (SELECT id FROM surveys WHERE evening_id = ?)`, id); err != nil {
+		return fmt.Errorf("delete evening responses: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, "DELETE FROM surveys WHERE evening_id = ?", id); err != nil {
+		return fmt.Errorf("delete evening surveys: %w", err)
+	}
+
+	res, err := tx.ExecContext(ctx, "DELETE FROM evenings WHERE id = ?", id)
 	if err != nil {
 		return fmt.Errorf("delete evening: %w", err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return fmt.Errorf("delete evening: %w", ErrNotFound)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit delete evening: %w", err)
 	}
 	return nil
 }

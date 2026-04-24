@@ -51,4 +51,19 @@
         </button>
     </form>
 </div>
+
+{{if eq .User.Role "admin"}}
+<div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 max-w-lg">
+    <h2 class="font-bold mb-2">Dienstabend löschen</h2>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
+        Löscht diesen Dienstabend inklusive zugehöriger Umfrage und aller Antworten.
+    </p>
+    <form method="POST" action="/admin/da/{{.Evening.ID}}/delete"
+        onsubmit="return confirm('Dienstabend wirklich löschen? Zugehörige Umfrage und alle Antworten werden ebenfalls gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.')">
+        <button type="submit" class="text-sm text-red-600 dark:text-red-400 hover:underline">
+            Dienstabend löschen
+        </button>
+    </form>
+</div>
+{{end}}
 {{end}}

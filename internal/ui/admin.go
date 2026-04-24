@@ -43,6 +43,7 @@ func (h *AdminHandler) RegisterRoutes(mux *http.ServeMux, authMw func(http.Handl
 	mux.Handle("POST /admin/groups/{id}/da", wrap(h.createEvening))
 	mux.Handle("GET /admin/da/{id}", wrap(h.showEvening))
 	mux.Handle("POST /admin/da/{id}", wrap(h.updateEvening))
+	mux.Handle("POST /admin/da/{id}/delete", adminWrap(h.deleteEvening))
 }
 
 func (h *AdminHandler) dashboard(w http.ResponseWriter, r *http.Request) {
@@ -223,5 +224,23 @@ func (h *AdminHandler) updateEvening(w http.ResponseWriter, r *http.Request) {
 		eve.Notes = &n
 	}
 	h.evenings.Update(ctx, eve)
+	http.Redirect(w, r, fmt.Sprintf("/admin/groups/%d", eve.GroupID), http.StatusSeeOther)
+}
+
+func (h *AdminHandler) deleteEvening(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(r.PathValue("id"))
+	ctx := r.Context()
+
+	eve, err := h.evenings.GetByID(ctx, id)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if err := h.evenings.Delete(ctx, id); err != nil {
+		http.Error(w, "Dienstabend konnte nicht gelöscht werden", http.StatusInternalServerError)
+		return
+	}
+
 	http.Redirect(w, r, fmt.Sprintf("/admin/groups/%d", eve.GroupID), http.StatusSeeOther)
 }
