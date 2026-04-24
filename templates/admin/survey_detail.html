@@ -250,7 +250,7 @@
     });
 }());
 </script>
-{{if and .Stats .Stats.Ratings}}
+{{if and .Stats .Stats.Ratings (gt .Stats.ResponseCount 0)}}
 <script>
 var c = getChartColors();
 var chart = echarts.init(document.getElementById('radar-chart'));
