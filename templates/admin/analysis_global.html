@@ -22,15 +22,34 @@
 
 {{if .Comparisons}}
 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 mb-6">
+    <h2 class="font-bold mb-3">Ø Gesamt nach Gruppe</h2>
     <div id="comparison-chart" style="height:400px"></div>
 </div>
 
-<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-    <table class="w-full text-sm">
+{{$questions := .QuestionMeta}}
+{{if $questions}}
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 mb-6">
+    <div class="flex flex-wrap gap-2 items-center justify-between mb-3">
+        <h2 class="font-bold">Vergleich nach Bewertungsfrage</h2>
+        <div class="flex gap-2 text-xs">
+            <button type="button" id="group-only-overall" class="px-2 py-1 rounded border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">Nur Ø Gesamt</button>
+            <button type="button" id="group-all" class="px-2 py-1 rounded border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">Alle Fragen</button>
+        </div>
+    </div>
+    <div id="per-question-chart" style="height:480px"></div>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Klick in der Legende blendet einzelne Bewertungen ein oder aus.</p>
+</div>
+{{end}}
+
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden overflow-x-auto">
+    <table class="w-full text-sm whitespace-nowrap">
         <thead class="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
             <tr>
                 <th class="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Gruppe</th>
-                <th class="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">Ø Schulnote</th>
+                <th class="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">Ø Gesamt</th>
+                {{range $questions}}
+                <th class="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400" title="{{.QuestionText}}">{{.QuestionID}}</th>
+                {{end}}
                 <th class="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">Dienstabende</th>
                 <th class="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">Antworten gesamt</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Aktionen</th>
@@ -45,6 +64,15 @@
                         {{if gt .AvgOverall 0.0}}{{printf "%.1f" .AvgOverall}}{{else}}—{{end}}
                     </span>
                 </td>
+                {{range .Ratings}}
+                <td class="px-4 py-3 text-right">
+                    {{if gt .Avg 0.0}}
+                    <span class="{{if le .Avg 2.0}}text-green-600{{else if le .Avg 3.5}}text-yellow-600{{else}}text-red-600{{end}}">{{printf "%.1f" .Avg}}</span>
+                    {{else}}
+                    <span class="text-gray-400 dark:text-gray-500">—</span>
+                    {{end}}
+                </td>
+                {{end}}
                 <td class="px-4 py-3 text-right text-gray-600 dark:text-gray-400">{{.TotalDAs}}</td>
                 <td class="px-4 py-3 text-right text-gray-600 dark:text-gray-400">{{.TotalResp}}</td>
                 <td class="px-4 py-3">
@@ -58,6 +86,12 @@
         </tbody>
     </table>
 </div>
+{{if $questions}}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+    Spalten:
+    {{range $i, $q := $questions}}{{if $i}} · {{end}}<span class="font-medium">{{$q.QuestionID}}</span> {{$q.QuestionText}}{{end}}
+</p>
+{{end}}
 {{else}}
 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 text-center text-gray-500 dark:text-gray-400">
     Noch keine Daten vorhanden.
@@ -68,12 +102,15 @@
 {{if .Comparisons}}
 <script>
 var c = getChartColors();
-var chart = echarts.init(document.getElementById('comparison-chart'));
+var overallChart = echarts.init(document.getElementById('comparison-chart'));
 var data = {{toJSON .Comparisons}};
+var questionMeta = {{toJSON .QuestionMeta}} || [];
+
+var palette = ['#0ea5e9','#10b981','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#84cc16','#6366f1','#f97316','#06b6d4'];
 
 function renderComparison() {
     c = getChartColors();
-    chart.setOption({
+    overallChart.setOption({
         tooltip: {
             trigger: 'axis',
             axisPointer: {type: 'shadow'},
@@ -109,8 +146,113 @@ function renderComparison() {
     });
 }
 renderComparison();
-window.addEventListener('resize', function() { chart.resize(); });
-window.updateChartTheme = renderComparison;
+window.addEventListener('resize', function() { overallChart.resize(); });
+
+var perQuestionEl = document.getElementById('per-question-chart');
+var perQuestionChart = perQuestionEl ? echarts.init(perQuestionEl) : null;
+
+var perQuestionSelected = {'Ø Gesamt': true};
+questionMeta.forEach(function(q) { perQuestionSelected[q.questionId.toUpperCase() + ' · ' + q.questionText] = false; });
+
+function ratingFor(group, qid) {
+    if (!group.ratings) return 0;
+    for (var i = 0; i < group.ratings.length; i++) {
+        if (group.ratings[i].questionId === qid) return group.ratings[i].avg;
+    }
+    return 0;
+}
+
+function buildPerQuestionSeries(colors) {
+    var series = [{
+        name: 'Ø Gesamt',
+        type: 'bar',
+        data: data.map(function(g) { return g.avgOverall > 0 ? g.avgOverall : null; }),
+        itemStyle: {color: colors.lineColor},
+        label: {show: true, position: 'top', formatter: function(p){ return p.value != null ? p.value.toFixed(1) : ''; }, fontSize: 11, color: colors.textColor}
+    }];
+    questionMeta.forEach(function(q, idx) {
+        series.push({
+            name: q.questionId.toUpperCase() + ' · ' + q.questionText,
+            type: 'bar',
+            data: data.map(function(g) {
+                var v = ratingFor(g, q.questionId);
+                return v > 0 ? v : null;
+            }),
+            itemStyle: {color: palette[idx % palette.length]}
+        });
+    });
+    return series;
+}
+
+function renderPerQuestion() {
+    if (!perQuestionChart) return;
+    c = getChartColors();
+    perQuestionChart.setOption({
+        legend: {
+            type: 'scroll',
+            top: 0,
+            left: 'center',
+            textStyle: {color: c.textColor},
+            inactiveColor: c.isDark ? '#4b5563' : '#9ca3af',
+            selected: perQuestionSelected
+        },
+        grid: {top: 60, left: 60, right: 30, bottom: 50},
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: {type: 'shadow'},
+            backgroundColor: c.tooltipBg,
+            borderColor: c.tooltipBorder,
+            textStyle: { color: c.tooltipText },
+            valueFormatter: function(v) { return (v == null) ? '–' : v.toFixed(1); }
+        },
+        xAxis: {
+            type: 'category',
+            data: data.map(function(g) { return g.groupName; }),
+            axisLine: { lineStyle: { color: c.axisLineColor } },
+            axisLabel: { color: c.textColor, interval: 0, rotate: data.length > 4 ? 20 : 0 }
+        },
+        yAxis: {
+            type: 'value',
+            min: 1,
+            max: 6,
+            inverse: true,
+            axisLabel: { formatter: function(v) { return v.toFixed(0); }, color: c.textColor },
+            axisLine: { lineStyle: { color: c.axisLineColor } },
+            splitLine: { lineStyle: { color: c.splitLineColor } }
+        },
+        series: buildPerQuestionSeries(c)
+    }, true);
+}
+
+if (perQuestionChart) {
+    perQuestionChart.on('legendselectchanged', function(ev) {
+        perQuestionSelected = ev.selected;
+    });
+    renderPerQuestion();
+    window.addEventListener('resize', function() { perQuestionChart.resize(); });
+
+    var btnOnlyOverall = document.getElementById('group-only-overall');
+    var btnAll = document.getElementById('group-all');
+    if (btnOnlyOverall) {
+        btnOnlyOverall.addEventListener('click', function() {
+            perQuestionSelected = {'Ø Gesamt': true};
+            questionMeta.forEach(function(q) { perQuestionSelected[q.questionId.toUpperCase() + ' · ' + q.questionText] = false; });
+            renderPerQuestion();
+        });
+    }
+    if (btnAll) {
+        btnAll.addEventListener('click', function() {
+            perQuestionSelected = {'Ø Gesamt': true};
+            questionMeta.forEach(function(q) { perQuestionSelected[q.questionId.toUpperCase() + ' · ' + q.questionText] = true; });
+            renderPerQuestion();
+        });
+    }
+}
+
+window.updateChartTheme = function() {
+    renderComparison();
+    renderPerQuestion();
+};
 </script>
 {{end}}
 {{end}}

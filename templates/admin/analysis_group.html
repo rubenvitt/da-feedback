@@ -50,15 +50,27 @@
 
 {{if and .Trend .Trend.Points}}
 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 mb-6">
-    <div id="trend-chart" style="height:400px"></div>
+    <div class="flex flex-wrap gap-2 items-center justify-between mb-2">
+        <h2 class="font-bold">Trend nach Bewertung</h2>
+        <div class="flex gap-2 text-xs">
+            <button type="button" id="series-only-overall" class="px-2 py-1 rounded border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">Nur Ø Gesamt</button>
+            <button type="button" id="series-all" class="px-2 py-1 rounded border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">Alle Fragen</button>
+        </div>
+    </div>
+    <div id="trend-chart" style="height:460px"></div>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Klick in der Legende blendet einzelne Bewertungen ein oder aus.</p>
 </div>
 
-<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-    <table class="w-full text-sm">
+{{$ratings := (index .Trend.Points 0).Ratings}}
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden overflow-x-auto">
+    <table class="w-full text-sm whitespace-nowrap">
         <thead class="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
             <tr>
                 <th class="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Datum</th>
-                <th class="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">Ø Schulnote</th>
+                <th class="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">Ø Gesamt</th>
+                {{range $ratings}}
+                <th class="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400" title="{{.QuestionText}}">{{.QuestionID}}</th>
+                {{end}}
                 <th class="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400">Antworten</th>
             </tr>
         </thead>
@@ -71,12 +83,27 @@
                         {{printf "%.1f" .AvgOverall}}
                     </span>
                 </td>
+                {{range .Ratings}}
+                <td class="px-4 py-3 text-right">
+                    {{if gt .Avg 0.0}}
+                    <span class="{{if le .Avg 2.0}}text-green-600{{else if le .Avg 3.5}}text-yellow-600{{else}}text-red-600{{end}}">{{printf "%.1f" .Avg}}</span>
+                    {{else}}
+                    <span class="text-gray-400 dark:text-gray-500">—</span>
+                    {{end}}
+                </td>
+                {{end}}
                 <td class="px-4 py-3 text-right text-gray-500 dark:text-gray-400">{{.Responses}}</td>
             </tr>
             {{end}}
         </tbody>
     </table>
 </div>
+{{if $ratings}}
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+    Spalten:
+    {{range $i, $r := $ratings}}{{if $i}} · {{end}}<span class="font-medium">{{$r.QuestionID}}</span> {{$r.QuestionText}}{{end}}
+</p>
+{{end}}
 {{else}}
 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 text-center text-gray-500 dark:text-gray-400">
     Keine Daten für den gewählten Zeitraum.
@@ -90,18 +117,75 @@ var c = getChartColors();
 var chart = echarts.init(document.getElementById('trend-chart'));
 var data = {{toJSON .Trend.Points}};
 
+var palette = ['#0ea5e9','#10b981','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#84cc16','#6366f1','#f97316','#06b6d4'];
+var firstRatings = (data[0] && data[0].ratings) ? data[0].ratings : [];
+var questionMeta = firstRatings.map(function(r, idx) {
+    return {
+        id: r.questionId,
+        label: r.questionId.toUpperCase() + ' · ' + r.questionText,
+        color: palette[idx % palette.length]
+    };
+});
+
+function valueOrNull(v) { return (typeof v === 'number' && v > 0) ? v : null; }
+
+function buildSeries(colors) {
+    var series = [{
+        name: 'Ø Gesamt',
+        type: 'line',
+        data: data.map(function(p) { return valueOrNull(p.avgOverall); }),
+        smooth: true,
+        connectNulls: true,
+        areaStyle: {color: colors.areaColor},
+        lineStyle: {color: colors.lineColor, width: 3},
+        itemStyle: {color: colors.lineColor},
+        label: {show: true, position: 'top', formatter: function(p){ return p.value != null ? p.value.toFixed(1) : ''; }, fontSize: 11, color: colors.textColor},
+        z: 10
+    }];
+    questionMeta.forEach(function(q) {
+        series.push({
+            name: q.label,
+            type: 'line',
+            data: data.map(function(p) {
+                if (!p.ratings) return null;
+                var found = null;
+                for (var i = 0; i < p.ratings.length; i++) {
+                    if (p.ratings[i].questionId === q.id) { found = p.ratings[i]; break; }
+                }
+                return found ? valueOrNull(found.avg) : null;
+            }),
+            smooth: true,
+            connectNulls: true,
+            lineStyle: {color: q.color, width: 2},
+            itemStyle: {color: q.color},
+            symbolSize: 6,
+            z: 5
+        });
+    });
+    return series;
+}
+
+var legendSelected = {'Ø Gesamt': true};
+questionMeta.forEach(function(q) { legendSelected[q.label] = false; });
+
 function renderTrend() {
     c = getChartColors();
     chart.setOption({
+        legend: {
+            type: 'scroll',
+            top: 0,
+            left: 'center',
+            textStyle: {color: c.textColor},
+            inactiveColor: c.isDark ? '#4b5563' : '#9ca3af',
+            selected: legendSelected
+        },
+        grid: {top: 60, left: 50, right: 30, bottom: 40},
         tooltip: {
             trigger: 'axis',
             backgroundColor: c.tooltipBg,
             borderColor: c.tooltipBorder,
             textStyle: { color: c.tooltipText },
-            formatter: function(params) {
-                var p = params[0];
-                return p.axisValue + '<br>Ø ' + p.value.toFixed(1) + ' (Schulnote)';
-            }
+            valueFormatter: function(v) { return (v == null) ? '–' : v.toFixed(1); }
         },
         xAxis: {
             type: 'category',
@@ -121,21 +205,28 @@ function renderTrend() {
             axisLine: { lineStyle: { color: c.axisLineColor } },
             splitLine: { lineStyle: { color: c.splitLineColor } }
         },
-        series: [{
-            name: 'Ø Schulnote',
-            type: 'line',
-            data: data.map(function(p) { return p.avgOverall; }),
-            smooth: true,
-            areaStyle: {color: c.areaColor},
-            lineStyle: {color: c.lineColor, width: 3},
-            itemStyle: {color: c.lineColor},
-            label: {show: true, position: 'top', formatter: '{c}', fontSize: 11, color: c.textColor}
-        }]
-    });
+        series: buildSeries(c)
+    }, true);
 }
+
+chart.on('legendselectchanged', function(ev) {
+    legendSelected = ev.selected;
+});
+
 renderTrend();
 window.addEventListener('resize', function() { chart.resize(); });
 window.updateChartTheme = renderTrend;
+
+document.getElementById('series-only-overall').addEventListener('click', function() {
+    legendSelected = {'Ø Gesamt': true};
+    questionMeta.forEach(function(q) { legendSelected[q.label] = false; });
+    renderTrend();
+});
+document.getElementById('series-all').addEventListener('click', function() {
+    legendSelected = {'Ø Gesamt': true};
+    questionMeta.forEach(function(q) { legendSelected[q.label] = true; });
+    renderTrend();
+});
 </script>
 {{end}}
 {{end}}
