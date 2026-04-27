@@ -91,9 +91,25 @@ func (h *AnalysisHandler) groupAnalysis(w http.ResponseWriter, r *http.Request) 
 
 func (h *AnalysisHandler) globalAnalysis(w http.ResponseWriter, r *http.Request) {
 	comps, _ := h.analysis.GetGroupComparisons(r.Context())
+
+	var questionMeta []analysis.RatingAvg
+	for _, c := range comps {
+		if len(c.Ratings) > 0 {
+			questionMeta = make([]analysis.RatingAvg, len(c.Ratings))
+			for i, rt := range c.Ratings {
+				questionMeta[i] = analysis.RatingAvg{
+					QuestionID:   rt.QuestionID,
+					QuestionText: rt.QuestionText,
+				}
+			}
+			break
+		}
+	}
+
 	h.render.Render(w, "admin/analysis_global.html", http.StatusOK, map[string]any{
-		"User":        auth.GetSession(r).User,
-		"Comparisons": comps,
+		"User":         auth.GetSession(r).User,
+		"Comparisons":  comps,
+		"QuestionMeta": questionMeta,
 	})
 }
 

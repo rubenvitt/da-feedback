@@ -13,9 +13,9 @@ import (
 )
 
 type RatingAvg struct {
-	QuestionID   string
-	QuestionText string
-	Avg          float64
+	QuestionID   string  `json:"questionId"`
+	QuestionText string  `json:"questionText"`
+	Avg          float64 `json:"avg"`
 }
 
 type TextResponses struct {
@@ -40,17 +40,19 @@ type GroupTrend struct {
 }
 
 type TrendPoint struct {
-	Date       time.Time `json:"date"`
-	AvgOverall float64   `json:"avgOverall"`
-	Responses  int       `json:"responses"`
+	Date       time.Time   `json:"date"`
+	AvgOverall float64     `json:"avgOverall"`
+	Ratings    []RatingAvg `json:"ratings"`
+	Responses  int         `json:"responses"`
 }
 
 type GroupComparison struct {
-	GroupID    int     `json:"groupId"`
-	GroupName  string  `json:"groupName"`
-	AvgOverall float64 `json:"avgOverall"`
-	TotalDAs   int     `json:"totalDAs"`
-	TotalResp  int     `json:"totalResp"`
+	GroupID    int         `json:"groupId"`
+	GroupName  string      `json:"groupName"`
+	AvgOverall float64     `json:"avgOverall"`
+	Ratings    []RatingAvg `json:"ratings"`
+	TotalDAs   int         `json:"totalDAs"`
+	TotalResp  int         `json:"totalResp"`
 }
 
 type Store struct {
@@ -166,8 +168,8 @@ func (s *Store) GetDAStats(ctx context.Context, eveningID int) (*DAStats, error)
 }
 
 func (s *Store) GetGroupTrend(ctx context.Context, groupID int, from, to time.Time) (*GroupTrend, error) {
-	// Alle Bewertungs-Fragen-IDs der Gruppe ermitteln (Standard-Fragen als Fallback)
-	ratingIDs := ratingQuestionIDs(survey.StandardQuestions)
+	// Alle Bewertungsfragen der Gruppe ermitteln (Standard-Fragen als Fallback)
+	ratingQs := ratingQuestions(survey.StandardQuestions)
 
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT e.date, r.answers FROM responses r
@@ -180,11 +182,14 @@ func (s *Store) GetGroupTrend(ctx context.Context, groupID int, from, to time.Ti
 	}
 	defer rows.Close()
 
-	byDate := map[string]*struct {
+	type bucket struct {
 		date     time.Time
 		totalSum float64
 		count    int
-	}{}
+		qSums    map[string]float64
+		qCounts  map[string]int
+	}
+	byDate := map[string]*bucket{}
 
 	for rows.Next() {
 		var date time.Time
@@ -194,11 +199,11 @@ func (s *Store) GetGroupTrend(ctx context.Context, groupID int, from, to time.Ti
 		}
 		key := date.Format("2006-01-02")
 		if byDate[key] == nil {
-			byDate[key] = &struct {
-				date     time.Time
-				totalSum float64
-				count    int
-			}{date: date}
+			byDate[key] = &bucket{
+				date:    date,
+				qSums:   make(map[string]float64),
+				qCounts: make(map[string]int),
+			}
 		}
 
 		var answers map[string]any
@@ -211,11 +216,15 @@ func (s *Store) GetGroupTrend(ctx context.Context, groupID int, from, to time.Ti
 
 		var ratingSum float64
 		var ratingCount int
-		for _, id := range ratingIDs {
-			if v := toFloat(answers[id]); v > 0 {
-				ratingSum += v
-				ratingCount++
+		for _, q := range ratingQs {
+			v := toFloat(answers[q.ID])
+			if v <= 0 {
+				continue
 			}
+			ratingSum += v
+			ratingCount++
+			d.qSums[q.ID] += v
+			d.qCounts[q.ID]++
 		}
 		if ratingCount > 0 {
 			d.totalSum += ratingSum / float64(ratingCount)
@@ -224,13 +233,27 @@ func (s *Store) GetGroupTrend(ctx context.Context, groupID int, from, to time.Ti
 
 	trend := &GroupTrend{}
 	for _, d := range byDate {
-		if d.count > 0 {
-			trend.Points = append(trend.Points, TrendPoint{
-				Date:       d.date,
-				AvgOverall: round2(d.totalSum / float64(d.count)),
-				Responses:  d.count,
+		if d.count == 0 {
+			continue
+		}
+		ratings := make([]RatingAvg, 0, len(ratingQs))
+		for _, q := range ratingQs {
+			avg := 0.0
+			if d.qCounts[q.ID] > 0 {
+				avg = round2(d.qSums[q.ID] / float64(d.qCounts[q.ID]))
+			}
+			ratings = append(ratings, RatingAvg{
+				QuestionID:   q.ID,
+				QuestionText: q.Text,
+				Avg:          avg,
 			})
 		}
+		trend.Points = append(trend.Points, TrendPoint{
+			Date:       d.date,
+			AvgOverall: round2(d.totalSum / float64(d.count)),
+			Ratings:    ratings,
+			Responses:  d.count,
+		})
 	}
 	sort.Slice(trend.Points, func(i, j int) bool {
 		return trend.Points[i].Date.Before(trend.Points[j].Date)
@@ -268,17 +291,18 @@ func (s *Store) GetGroupComparisons(ctx context.Context) ([]GroupComparison, err
 
 	// Durchschnitt über alle Bewertungsfragen pro Gruppe berechnen
 	for i, c := range comps {
-		avg, err := s.calcGroupAvg(ctx, c.GroupID)
+		avg, ratings, err := s.calcGroupAvg(ctx, c.GroupID)
 		if err == nil {
 			comps[i].AvgOverall = avg
+			comps[i].Ratings = ratings
 		}
 	}
 
 	return comps, nil
 }
 
-func (s *Store) calcGroupAvg(ctx context.Context, groupID int) (float64, error) {
-	ratingIDs := ratingQuestionIDs(survey.StandardQuestions)
+func (s *Store) calcGroupAvg(ctx context.Context, groupID int) (float64, []RatingAvg, error) {
+	ratingQs := ratingQuestions(survey.StandardQuestions)
 
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT r.answers FROM responses r
@@ -286,12 +310,14 @@ func (s *Store) calcGroupAvg(ctx context.Context, groupID int) (float64, error) 
 		 JOIN evenings e ON s.evening_id = e.id
 		 WHERE e.group_id = ?`, groupID)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 	defer rows.Close()
 
 	var totalAvg float64
 	var count int
+	qSums := make(map[string]float64)
+	qCounts := make(map[string]int)
 
 	for rows.Next() {
 		var aJSON string
@@ -305,11 +331,15 @@ func (s *Store) calcGroupAvg(ctx context.Context, groupID int) (float64, error) 
 
 		var rSum float64
 		var rCount int
-		for _, id := range ratingIDs {
-			if v := toFloat(answers[id]); v > 0 {
-				rSum += v
-				rCount++
+		for _, q := range ratingQs {
+			v := toFloat(answers[q.ID])
+			if v <= 0 {
+				continue
 			}
+			rSum += v
+			rCount++
+			qSums[q.ID] += v
+			qCounts[q.ID]++
 		}
 		if rCount > 0 {
 			totalAvg += rSum / float64(rCount)
@@ -317,20 +347,33 @@ func (s *Store) calcGroupAvg(ctx context.Context, groupID int) (float64, error) 
 		}
 	}
 
-	if count == 0 {
-		return 0, nil
+	ratings := make([]RatingAvg, 0, len(ratingQs))
+	for _, q := range ratingQs {
+		avg := 0.0
+		if qCounts[q.ID] > 0 {
+			avg = round2(qSums[q.ID] / float64(qCounts[q.ID]))
+		}
+		ratings = append(ratings, RatingAvg{
+			QuestionID:   q.ID,
+			QuestionText: q.Text,
+			Avg:          avg,
+		})
 	}
-	return round2(totalAvg / float64(count)), nil
+
+	if count == 0 {
+		return 0, ratings, nil
+	}
+	return round2(totalAvg / float64(count)), ratings, nil
 }
 
-func ratingQuestionIDs(questions []survey.Question) []string {
-	var ids []string
+func ratingQuestions(questions []survey.Question) []survey.Question {
+	var rqs []survey.Question
 	for _, q := range questions {
 		if q.Type == survey.TypeSchulnote || q.Type == survey.TypeStars {
-			ids = append(ids, q.ID)
+			rqs = append(rqs, q)
 		}
 	}
-	return ids
+	return rqs
 }
 
 type jsonScanner struct {

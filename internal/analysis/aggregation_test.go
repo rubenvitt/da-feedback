@@ -117,4 +117,76 @@ func TestGetGroupComparisons(t *testing.T) {
 	if len(comps) != 2 {
 		t.Fatalf("expected 2, got %d", len(comps))
 	}
+
+	// Per-Frage-Durchschnitte sollten ebenfalls verfügbar sein
+	for _, c := range comps {
+		if len(c.Ratings) != 8 {
+			t.Fatalf("group %s: expected 8 ratings, got %d", c.GroupName, len(c.Ratings))
+		}
+		expected := 1.0
+		if c.GroupID == g2.ID {
+			expected = 3.0
+		}
+		for _, r := range c.Ratings {
+			if r.Avg != expected {
+				t.Fatalf("group %s: expected %s avg %.1f, got %.2f", c.GroupName, r.QuestionID, expected, r.Avg)
+			}
+		}
+	}
+}
+
+func TestGetGroupTrend(t *testing.T) {
+	env := setupTestDB(t)
+	ctx := context.Background()
+
+	g, _ := env.groups.Create(ctx, "I&K", "iuk")
+
+	e1, _ := env.evenings.Create(ctx, g.ID, time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC), nil)
+	s1, _ := env.surveys.Create(ctx, e1.ID, nil)
+	env.surveys.Activate(ctx, s1.ID, 48)
+	env.surveys.SubmitResponse(ctx, s1.ID, map[string]any{
+		"q1": 1, "q2": 1, "q3": 1, "q4": 1, "q5": 1, "q6": 1, "q7": 1, "q8": 1,
+	})
+
+	e2, _ := env.evenings.Create(ctx, g.ID, time.Date(2026, 4, 15, 0, 0, 0, 0, time.UTC), nil)
+	s2, _ := env.surveys.Create(ctx, e2.ID, nil)
+	env.surveys.Activate(ctx, s2.ID, 48)
+	env.surveys.SubmitResponse(ctx, s2.ID, map[string]any{
+		"q1": 4, "q2": 2, "q3": 2, "q4": 2, "q5": 2, "q6": 2, "q7": 2, "q8": 2,
+	})
+
+	from := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC)
+
+	trend, err := env.analysis.GetGroupTrend(ctx, g.ID, from, to)
+	if err != nil {
+		t.Fatalf("get trend: %v", err)
+	}
+	if len(trend.Points) != 2 {
+		t.Fatalf("expected 2 trend points, got %d", len(trend.Points))
+	}
+
+	// Erster Datenpunkt: alle q-Werte 1
+	for _, r := range trend.Points[0].Ratings {
+		if r.Avg != 1.0 {
+			t.Fatalf("point 0 %s: expected 1.0, got %.2f", r.QuestionID, r.Avg)
+		}
+	}
+
+	// Zweiter Datenpunkt: q1=4, andere=2
+	var q1Avg, q2Avg float64
+	for _, r := range trend.Points[1].Ratings {
+		if r.QuestionID == "q1" {
+			q1Avg = r.Avg
+		}
+		if r.QuestionID == "q2" {
+			q2Avg = r.Avg
+		}
+	}
+	if q1Avg != 4.0 {
+		t.Fatalf("point 1 q1: expected 4.0, got %.2f", q1Avg)
+	}
+	if q2Avg != 2.0 {
+		t.Fatalf("point 1 q2: expected 2.0, got %.2f", q2Avg)
+	}
 }
