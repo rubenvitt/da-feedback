@@ -43,8 +43,11 @@
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1">Umfrage schließen nach (Stunden)</label>
-                <input type="number" name="close_after_hours" value="{{derefInt .Group.CloseAfterHours}}"
+                <input type="number" name="close_after_hours" min="1"
+                    value="{{if .Group.CloseAfterHours}}{{derefInt .Group.CloseAfterHours}}{{end}}"
+                    placeholder="48 (Standard)"
                     class="w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 focus:border-red-500 focus:ring-1 focus:ring-red-500">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Leer lassen für Standardwert (48 Stunden).</p>
             </div>
             <button type="submit" class="w-full bg-red-700 dark:bg-red-600 text-white py-2 rounded hover:bg-red-800 dark:hover:bg-red-500 transition">
                 Speichern
