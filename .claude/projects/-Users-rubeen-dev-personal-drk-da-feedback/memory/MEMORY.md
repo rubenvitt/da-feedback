@@ -1,0 +1,1 @@
+- [Naming convention](feedback_naming.md) — Don't call the project "DRK Feedback" in user-facing text

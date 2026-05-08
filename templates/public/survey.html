@@ -26,7 +26,7 @@
         <div class="survey-card mb-6">
             <div class="survey-card-header">
                 <h2 class="survey-section-title">Dein Eindruck</h2>
-                <p class="survey-section-sub">Vergib Schulnoten von 1 (top!) bis 6 (ging gar nicht).</p>
+                <p class="survey-section-sub">Bitte nach Schulnoten bewerten: 1 = sehr gut, 6 = schlecht.</p>
             </div>
 
             <div class="matrix">
@@ -34,12 +34,12 @@
                 <div class="matrix-header">
                     <div class="matrix-label"></div>
                     <div class="matrix-grades">
-                        <span class="matrix-grade" style="color:#16a34a">1</span>
-                        <span class="matrix-grade" style="color:#65a30d">2</span>
-                        <span class="matrix-grade" style="color:#ca8a04">3</span>
-                        <span class="matrix-grade" style="color:#ea580c">4</span>
-                        <span class="matrix-grade" style="color:#dc2626">5</span>
                         <span class="matrix-grade" style="color:#991b1b">6</span>
+                        <span class="matrix-grade" style="color:#dc2626">5</span>
+                        <span class="matrix-grade" style="color:#ea580c">4</span>
+                        <span class="matrix-grade" style="color:#ca8a04">3</span>
+                        <span class="matrix-grade" style="color:#65a30d">2</span>
+                        <span class="matrix-grade" style="color:#16a34a">1</span>
                     </div>
                 </div>
 
@@ -51,12 +51,12 @@
                         {{if .Required}}<span style="color:#f87171;font-size:0.7rem;margin-left:2px">*</span>{{end}}
                     </div>
                     <div class="matrix-grades">
-                        <button type="button" class="matrix-btn" data-value="1">1</button>
-                        <button type="button" class="matrix-btn" data-value="2">2</button>
-                        <button type="button" class="matrix-btn" data-value="3">3</button>
-                        <button type="button" class="matrix-btn" data-value="4">4</button>
-                        <button type="button" class="matrix-btn" data-value="5">5</button>
-                        <button type="button" class="matrix-btn" data-value="6">6</button>
+                        <button type="button" class="matrix-btn" data-value="6" aria-label="Note 6, schlecht"><span class="grade-number">6</span><span class="grade-help">Schlecht</span></button>
+                        <button type="button" class="matrix-btn" data-value="5" aria-label="Note 5, mangelhaft"><span class="grade-number">5</span></button>
+                        <button type="button" class="matrix-btn" data-value="4" aria-label="Note 4, ausreichend"><span class="grade-number">4</span></button>
+                        <button type="button" class="matrix-btn" data-value="3" aria-label="Note 3, befriedigend"><span class="grade-number">3</span></button>
+                        <button type="button" class="matrix-btn" data-value="2" aria-label="Note 2, gut"><span class="grade-number">2</span></button>
+                        <button type="button" class="matrix-btn" data-value="1" aria-label="Note 1, sehr gut"><span class="grade-number">1</span><span class="grade-help">Sehr gut</span></button>
                     </div>
                 </div>
                 {{end}}
@@ -66,8 +66,8 @@
                 <div class="matrix-footer">
                     <div class="matrix-label"></div>
                     <div class="matrix-grades">
-                        <span class="matrix-legend-left">Sehr gut</span>
-                        <span class="matrix-legend-right">Ungenügend</span>
+                        <span class="matrix-legend-left">Schlecht</span>
+                        <span class="matrix-legend-right">Sehr gut</span>
                     </div>
                 </div>
             </div>
@@ -123,16 +123,16 @@
 <style>
 /* ── Survey Card ── */
 .survey-card {
-    background: var(--survey-card-bg);
+    background: var(--survey-card-bg, #fff);
     border-radius: 1rem;
-    border: 1px solid var(--survey-card-border);
-    box-shadow: 0 1px 2px var(--survey-card-shadow);
+    border: 1px solid var(--survey-card-border, #f3f4f6);
+    box-shadow: 0 1px 2px var(--survey-card-shadow, rgba(0,0,0,0.04));
     overflow: hidden;
 }
 .survey-card-header { padding: 1.25rem 1.25rem 0.75rem; }
 .survey-card-body { padding: 0 1.25rem 1.25rem; }
-.survey-section-title { font-size: 1.1rem; font-weight: 600; color: var(--survey-section-title); }
-.survey-section-sub { font-size: 0.75rem; color: var(--survey-section-sub); margin-top: 0.25rem; }
+.survey-section-title { font-size: 1.1rem; font-weight: 600; color: var(--survey-section-title, #1f2937); }
+.survey-section-sub { font-size: 0.75rem; color: var(--survey-section-sub, #9ca3af); margin-top: 0.25rem; }
 
 /* ── Matrix Layout ── */
 .matrix { padding: 0 0.5rem 1rem; }
@@ -141,24 +141,24 @@
     display: flex;
     align-items: center;
     padding: 0.6rem 0.5rem;
-    border-bottom: 1px solid var(--survey-row-border);
+    border-bottom: 1px solid var(--survey-row-border, #f9fafb);
     transition: background 0.15s;
 }
-.matrix-row:hover { background: var(--survey-row-hover); }
+.matrix-row:hover { background: var(--survey-row-hover, rgba(249,250,251,0.6)); }
 
 .matrix-header {
     display: flex;
     align-items: center;
     padding: 0.6rem 0.5rem;
-    border-bottom: 1px solid var(--survey-header-border);
-    border-top: 1px solid var(--survey-header-border);
+    border-bottom: 1px solid var(--survey-header-border, #f3f4f6);
+    border-top: 1px solid var(--survey-header-border, #f3f4f6);
 }
 .matrix-header .matrix-grades span { font-weight: 600; font-size: 0.85rem; }
 
 .matrix-label {
     flex: 1;
     font-size: 0.875rem;
-    color: var(--survey-label-color);
+    color: var(--survey-label-color, #374151);
     padding-right: 0.75rem;
     line-height: 1.4;
 }
@@ -179,8 +179,8 @@
     width: 2.4rem;
     height: 2.4rem;
     border-radius: 50%;
-    border: 2px solid var(--survey-btn-border);
-    background: var(--survey-btn-bg);
+    border: 2px solid var(--survey-btn-border, #e5e7eb);
+    background: var(--survey-btn-bg, #fff);
     color: transparent;
     font-size: 0;
     cursor: pointer;
@@ -201,9 +201,10 @@
 }
 
 /* Ausgewählt: Punkt füllt sich farbig */
-.matrix-btn.selected { box-shadow: 0 0 0 2px var(--survey-btn-selected-shadow); }
+.matrix-btn.selected { box-shadow: 0 0 0 2px var(--survey-btn-selected-shadow, rgba(0,0,0,0.06)); }
 .matrix-btn.selected::after { background: var(--dot-color); }
 .matrix-btn.selected { border-color: var(--dot-color); }
+.grade-help { display: none; }
 
 /* ── Matrix Footer (Legende) ── */
 .matrix-footer {
@@ -211,7 +212,7 @@
     align-items: center;
     padding: 0.4rem 0.5rem 0;
     font-size: 0.65rem;
-    color: var(--survey-footer-color);
+    color: var(--survey-footer-color, #9ca3af);
 }
 .matrix-footer .matrix-grades {
     display: flex;
@@ -227,7 +228,7 @@
     40%, 80% { transform: translateX(5px); }
 }
 .shake { animation: shake 0.35s ease-in-out; }
-.matrix-row.unanswered .matrix-label { color: var(--survey-unanswered); }
+.matrix-row.unanswered .matrix-label { color: var(--survey-unanswered, #dc2626); }
 
 /* ── Mobile: unter 600px ── */
 @media (max-width: 599px) {
@@ -250,11 +251,21 @@
     }
     .matrix-btn {
         width: 100%;
-        height: 2.6rem;
+        min-height: 2.9rem;
         border-radius: 0.75rem;
         font-size: 0.8rem;
         font-weight: 600;
-        color: var(--survey-btn-mobile-color);
+        color: var(--survey-btn-mobile-color, #9ca3af);
+        line-height: 1.05;
+    }
+    .matrix-btn .grade-number { display: block; }
+    .matrix-btn .grade-help {
+        display: block;
+        margin-top: 0.18rem;
+        font-size: 0.56rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0;
     }
     .matrix-btn.selected {
         color: var(--dot-color);
@@ -270,15 +281,15 @@
     display: block;
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--survey-label-color);
+    color: var(--survey-label-color, #374151);
     margin-bottom: 0.4rem;
 }
 .text-question-input {
     width: 100%;
     border-radius: 0.75rem;
-    border: 1px solid var(--survey-input-border);
-    background: var(--survey-input-bg);
-    color: var(--survey-input-color);
+    border: 1px solid var(--survey-input-border, #e5e7eb);
+    background: var(--survey-input-bg, #f9fafb);
+    color: var(--survey-input-color, inherit);
     padding: 0.75rem 1rem;
     font-size: 0.875rem;
     transition: all 0.2s;
@@ -288,18 +299,18 @@
 }
 .text-question-input:focus {
     outline: none;
-    border-color: var(--survey-input-focus-border);
-    box-shadow: 0 0 0 3px var(--survey-input-focus-shadow);
-    background: var(--survey-input-focus-bg);
+    border-color: var(--survey-input-focus-border, #f87171);
+    box-shadow: 0 0 0 3px var(--survey-input-focus-shadow, rgba(248,113,113,0.1));
+    background: var(--survey-input-focus-bg, #fff);
 }
-.text-question-input::placeholder { color: var(--survey-input-placeholder); }
+.text-question-input::placeholder { color: var(--survey-input-placeholder, #d1d5db); }
 
 /* ── Submit ── */
 .submit-btn {
     display: block;
     width: 100%;
     padding: 1rem;
-    background: var(--survey-submit-bg);
+    background: var(--survey-submit-bg, #b91c1c);
     color: #fff;
     border: none;
     border-radius: 1rem;
@@ -309,7 +320,7 @@
     transition: all 0.2s;
     font-family: inherit;
 }
-.submit-btn:hover { background: var(--survey-submit-hover); }
+.submit-btn:hover { background: var(--survey-submit-hover, #991b1b); }
 .submit-btn:active { transform: scale(0.98); }
 </style>
 
