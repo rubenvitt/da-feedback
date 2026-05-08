@@ -204,6 +204,71 @@
 </script>
 <script>
 (function () {
+    function showManualCopyDialog(text) {
+        var overlay = document.createElement('div');
+        overlay.style.position = 'fixed';
+        overlay.style.inset = '0';
+        overlay.style.background = 'rgba(17, 24, 39, 0.7)';
+        overlay.style.zIndex = '1000';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.padding = '1rem';
+
+        var card = document.createElement('div');
+        card.style.width = 'min(680px, 100%)';
+        card.style.background = '#fff';
+        card.style.borderRadius = '0.75rem';
+        card.style.padding = '1rem';
+        card.style.boxSizing = 'border-box';
+
+        var title = document.createElement('p');
+        title.textContent = 'Bitte manuell kopieren';
+        title.style.fontWeight = '700';
+        title.style.margin = '0 0 0.5rem 0';
+
+        var hint = document.createElement('p');
+        hint.textContent = 'Text ist markiert. Nutze Kopieren im Browser-Menü oder Strg/Cmd+C.';
+        hint.style.margin = '0 0 0.75rem 0';
+        hint.style.fontSize = '0.875rem';
+
+        var area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', '');
+        area.style.width = '100%';
+        area.style.height = '240px';
+        area.style.fontSize = '0.875rem';
+        area.style.fontFamily = 'ui-monospace, SFMono-Regular, Menlo, monospace';
+
+        var close = document.createElement('button');
+        close.type = 'button';
+        close.textContent = 'Schließen';
+        close.style.marginTop = '0.75rem';
+        close.style.padding = '0.5rem 0.75rem';
+        close.style.borderRadius = '0.5rem';
+        close.style.border = '1px solid #d1d5db';
+        close.style.background = '#f9fafb';
+
+        close.addEventListener('click', function () {
+            document.body.removeChild(overlay);
+        });
+
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) document.body.removeChild(overlay);
+        });
+
+        card.appendChild(title);
+        card.appendChild(hint);
+        card.appendChild(area);
+        card.appendChild(close);
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+
+        area.focus();
+        area.select();
+        area.setSelectionRange(0, area.value.length);
+    }
+
     var btn = document.getElementById('copy-prompt-btn');
     if (!btn) return;
 
@@ -223,17 +288,40 @@
                 if (navigator.clipboard && window.isSecureContext) {
                     return navigator.clipboard.writeText(text);
                 }
+
                 var ta = document.createElement('textarea');
                 ta.value = text;
+                ta.setAttribute('readonly', '');
                 ta.style.position = 'fixed';
+                ta.style.top = '0';
+                ta.style.left = '0';
+                ta.style.width = '1px';
+                ta.style.height = '1px';
                 ta.style.opacity = '0';
                 document.body.appendChild(ta);
+
+                ta.focus();
                 ta.select();
-                document.execCommand('copy');
+                ta.setSelectionRange(0, ta.value.length);
+
+                var copied = false;
+                try {
+                    copied = document.execCommand('copy');
+                } catch (e) {
+                    copied = false;
+                }
+
                 document.body.removeChild(ta);
+
+                if (copied) {
+                    return { manual: false };
+                }
+
+                showManualCopyDialog(text);
+                return { manual: true };
             })
-            .then(function () {
-                btn.textContent = 'Kopiert!';
+            .then(function (result) {
+                btn.textContent = result && result.manual ? 'Manuell kopieren' : 'Kopiert!';
                 setTimeout(function () {
                     btn.textContent = originalText;
                     btn.disabled = false;
